@@ -5,3 +5,5 @@ __*
 *.code-workspace
 *.db
 *.pro
+*.pre
+*.res

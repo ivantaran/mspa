@@ -31,7 +31,7 @@ mesh_size_substrate = 1.5 * mm
 mesh_size_environment = 10 * mm
 
 gmsh.initialize()
-# gmsh.open(MODEL_NAME + '.pro')
+gmsh.open(MODEL_NAME + '.pro')
 
 gmsh.model.add(MODEL_NAME)
 occ = gmsh.model.occ
@@ -74,6 +74,9 @@ gmsh.model.setPhysicalName(3, tag, 'Air')
 
 tag = gmsh.model.addPhysicalGroup(3, [pml3d])
 gmsh.model.setPhysicalName(3, tag, 'Pml')
+
+tag = gmsh.model.addPhysicalGroup(2, [patch2d, pcb2d])
+gmsh.model.setPhysicalName(2, tag, 'DomainTot')
 
 
 # gmsh.model.mesh.setSize(gmsh.model.occ.getEntities(0), mesh_size_condutor)
