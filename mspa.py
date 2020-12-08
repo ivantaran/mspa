@@ -1,10 +1,7 @@
-import pygetdp
 import gmsh
-
 import math
 import os
 import sys
-
 
 MODEL_NAME = 'mspa'
 
@@ -34,6 +31,8 @@ mesh_size_substrate = 1.5 * mm
 mesh_size_environment = 10 * mm
 
 gmsh.initialize()
+# gmsh.open(MODEL_NAME + '.pro')
+
 gmsh.model.add(MODEL_NAME)
 occ = gmsh.model.occ
 
@@ -61,17 +60,21 @@ gmsh.option.setNumber('Mesh.Algorithm3D', 4)  # (1=Delaunay, 4=Frontal)
 gmsh.option.setNumber('Mesh.Optimize', 1)
 gmsh.option.setNumber('Mesh.Smoothing', 5)
 
-phys_patch2d = gmsh.model.addPhysicalGroup(2, [patch2d, pcb2d])
-gmsh.model.setPhysicalName(2, phys_patch2d, 'conductor')
+tag = gmsh.model.addPhysicalGroup(2, [patch2d, pcb2d])
+gmsh.model.setPhysicalName(2, tag, 'Conductor')
 
-phys_pcb3d = gmsh.model.addPhysicalGroup(3, [pcb3d])
-gmsh.model.setPhysicalName(3, phys_pcb3d, 'substrate')
+tag = gmsh.model.addPhysicalGroup(2, [patch2d])
+gmsh.model.setPhysicalName(2, tag, 'SkinFeed')
 
-phys_air3d = gmsh.model.addPhysicalGroup(3, [air3d])
-gmsh.model.setPhysicalName(3, phys_air3d, 'air')
+tag = gmsh.model.addPhysicalGroup(3, [pcb3d])
+gmsh.model.setPhysicalName(3, tag, 'Substrate')
 
-phys_pml3d = gmsh.model.addPhysicalGroup(3, [pml3d])
-gmsh.model.setPhysicalName(3, phys_pml3d, 'pml')
+tag = gmsh.model.addPhysicalGroup(3, [air3d])
+gmsh.model.setPhysicalName(3, tag, 'Air')
+
+tag = gmsh.model.addPhysicalGroup(3, [pml3d])
+gmsh.model.setPhysicalName(3, tag, 'Pml')
+
 
 # gmsh.model.mesh.setSize(gmsh.model.occ.getEntities(0), mesh_size_condutor)
 tags = gmsh.model.getBoundary([(3, pcb3d)], False, False, True)
@@ -88,7 +91,7 @@ gmsh.model.mesh.setSize(tags, mesh_size_condutor)
 gmsh.model.mesh.generate(2)
 gmsh.write(MODEL_NAME + '.msh')
 
-if '-nopopup' not in sys.argv:
-    gmsh.fltk.run()
+# if '-nopopup' not in sys.argv:
+#     gmsh.fltk.run()
 
-gmsh.finalize()
+# gmsh.finalize()

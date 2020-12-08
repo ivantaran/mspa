@@ -1,4 +1,7 @@
 tmp/
 .vscode/
+__*
 *.msh
 *.code-workspace
+*.db
+*.pro
