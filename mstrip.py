@@ -201,18 +201,39 @@ operation.CreateDirectory('build')
 operation.Generate('A')
 operation.Solve('A')
 operation.SaveSolution('A')
+operation.PostOperation('Microwave_e')
 
-# pp = pro.postprocessing
-# pp.add('pp_test', 'Microwave_e')
-# po = pro.postoperation
-# poi = po.add('po_test', 'pp_test')
-# poi.add().add("v", OnElementsOf="Domain", File="test.pos")
+pp = pro.postprocessing
+ppi = pp.add('Microwave_e', 'Microwave_e')
+quantity = ppi.add()
+quantity.add(Name='e', Type='Local',
+             Value='{e}', In='DomainTot', Jacobian='JVol')
+quantity.add(Name='h_from_e', Type='Local',
+             Value='I[] * nu[] * {d e} / (2.0 * Pi * freq)', In='Domain', Jacobian='JVol')
+quantity.add(Name='exh', Type='Local',
+             Value='CrossProduct[{e}, Conj[I[] * nu[] * {d e} / (2.0 * Pi * freq)]]', In='Domain', Jacobian='JVol')
+
+# { Name exh ; Value{ // Poynting vector
+#     Local{ [  ] ;
+#       In Domain ;  Jacobian JVol; } } }
+
+
+po = pro.postoperation
+poi = po.add('Microwave_e', 'Microwave_e')
+poi0 = poi.add()
+poi0.add('e', OnElementsOf='Region[{Domain, -Pml}]', File='./build/e.pos')
+poi0.add(
+    'h_from_e', OnElementsOf='Region[{Domain, -Pml}]', File='./build/h_pml.pos')
+poi0.add(
+    'exh', OnElementsOf='Region[{Domain, -Pml}]', File='./build/exh_pml.pos')
+# print_html(poi0.code)
+# exit(0)
 
 
 pro.make_file()
 pro.write_file()
-# gmsh.open(pro.filename)
-# gmsh.onelab.run()
+gmsh.open(pro.filename)
+gmsh.onelab.run()
 # gmsh.model.setCurrent('mspa.geo')
 
 
