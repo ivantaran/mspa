@@ -45,7 +45,7 @@ for g in groups:
     name = gmsh.model.getPhysicalName(g[0], g[1])
     pro.group.add(name, tag)
 pro.group.Region('SurBC', 'SkinFeed')
-pro.group.Region('DomainTot', ['SkinFeed', 'Air', 'Pml'])
+pro.group.Region('DomainTot', ['Substrate', 'SkinFeed', 'Air', 'Pml'])
 pro.group.Region('DomainC', [])  # TODO remove
 pro.group.Region('Domain', ['Substrate', 'Air', 'Pml'])
 pro.group.define('DomainS')  # TODO remove

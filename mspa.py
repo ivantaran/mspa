@@ -34,9 +34,8 @@ mesh_size_substrate = 1.5 * mm
 mesh_size_environment = 10 * mm
 
 gmsh.initialize()
-
-# gmsh.open('mspa.pro')
-# gmsh.onelab.run()
+gmsh.open('mspa.pro')
+gmsh.onelab.run()
 
 # gmsh.model.setCurrent('mspa.geo')
 # path = os.path.dirname(os.path.abspath(__file__))
