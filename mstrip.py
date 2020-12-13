@@ -27,6 +27,8 @@ GDICT2 = {
     'Prism': 21,
 }
 
+MODEL_NAME = 'mspa'
+
 
 def add_integration(integration, name, group_dict, itype='Gauss'):
     i0 = integration.add(name)
@@ -38,7 +40,7 @@ def add_integration(integration, name, group_dict, itype='Gauss'):
 
 
 pro = Problem()
-pro.filename = mspa.MODEL_NAME + '.pro'
+pro.filename = MODEL_NAME + '.pro'
 groups = gmsh.model.getPhysicalGroups()
 for g in groups:
     tag = g[1]
