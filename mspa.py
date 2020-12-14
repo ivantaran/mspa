@@ -30,14 +30,14 @@ class Mspa(object):
         w0 = 55.49 * mm
         l0 = 42.99 * mm
 
-        pcb_oversize = 1.5
+        pcb_oversize = 2.0
         w1 = w0 * pcb_oversize
         l1 = l0 * pcb_oversize
 
         air_oversize = 1.5
         w2 = w1 * air_oversize
         l2 = l1 * air_oversize
-        h2 = 10.0 * dh * air_oversize
+        h2 = 20.0 * dh * air_oversize
 
         pml_oversize = 1.5
         w3 = w2 * pml_oversize
@@ -191,8 +191,8 @@ class Mspa(object):
         pcb3d = self.tags['pcb3d']
         pml3d = self.tags['pml3d']
 
-        tag = gmsh.model.addPhysicalGroup(2, [patch2d[1], pcb2d[1]])
-        gmsh.model.setPhysicalName(2, tag, 'Conductor')
+        # tag = gmsh.model.addPhysicalGroup(2, [patch2d[1], pcb2d[1]])
+        # gmsh.model.setPhysicalName(2, tag, 'Conductor')
 
         eps = 1.0e-4
         tags = gmsh.model.occ.getEntitiesInBoundingBox(
@@ -201,7 +201,7 @@ class Mspa(object):
         gmsh.model.setPhysicalName(2, tag, 'SkinFeed')
 
         tag = gmsh.model.addPhysicalGroup(3, [patch3d[1], gnd3d[1]])
-        gmsh.model.setPhysicalName(3, tag, 'ConductorVolume')
+        gmsh.model.setPhysicalName(3, tag, 'Conductor')
 
         tag = gmsh.model.addPhysicalGroup(3, [pcb3d[1]])
         gmsh.model.setPhysicalName(3, tag, 'Substrate')

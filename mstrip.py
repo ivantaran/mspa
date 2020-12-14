@@ -92,6 +92,8 @@ def _setup_plugins(box, wavenumber):
 
 
 model = mspa.Mspa(MODEL_NAME)
+# gmsh.model.mesh.generate(3)
+# gmsh.write(MODEL_NAME + '.msh')
 
 pro = Problem()
 pro.filename = MODEL_NAME + '.pro'
@@ -278,8 +280,6 @@ poi0.add(
     'h_from_e', OnElementsOf='Region[{Domain, -Pml}]', File='./build/h_pml.pos')
 poi0.add(
     'exh', OnElementsOf='Region[{Domain, -Pml}]', File='./build/exh_pml.pos')
-# print_html(poi0.code)
-# exit(0)
 
 
 pro.make_file()
@@ -287,10 +287,11 @@ pro.write_file()
 # gmsh.open(pro.filename)
 # gmsh.merge(pro.filename)
 # gmsh.model.setCurrent('mspa')
+
 gmsh.merge('./build/e.pos')
 gmsh.merge('./build/h_pml.pos')
 
-minimal_box = True
+minimal_box = False
 if minimal_box:
     box0 = gmsh.model.occ.getBoundingBox(*model.tags['gnd3d'])
     box1 = gmsh.model.occ.getBoundingBox(*model.tags['patch3d'])
@@ -308,12 +309,13 @@ else:
         box[i + 3] = airbox[i + 3] - eps
 
 _setup_plugins(box, fvar['k0'])
-gmsh.onelab.run()
+
 # gmsh.model.setCurrent('mspa.geo')
 # gmsh.model.mesh.generate(3)
 # gmsh.write(MODEL_NAME + '.vtk')
 
 
+gmsh.onelab.run()
 if '-nopopup' not in sys.argv:
     gmsh.fltk.run()
 
