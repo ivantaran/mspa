@@ -71,8 +71,6 @@ class Mspa(object):
         self._set_mesh_settings()
         self._create_groups()
 
-        # box = gmsh.model.occ.getBoundingBox()
-
         # gmsh.model.mesh.generate(3)
         # gmsh.write(self.name + '.msh')
 

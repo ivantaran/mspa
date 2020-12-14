@@ -5,6 +5,7 @@ from pygetdp.helpers import build_example_png, print_html
 from math import pi
 import gmsh
 import mspa
+import numpy as np
 
 
 GDICT1 = {
@@ -38,6 +39,59 @@ def add_integration(integration, name, group_dict, itype='Gauss'):
     for element, value in group_dict.items():
         ici.add(GeoElement=element, NumberOfPoints=value)
 
+
+def _setup_plugins(box, wavenumber):
+    p = gmsh.plugin
+
+    name = 'CutBox'
+    p.setNumber(name, 'NumPointsU', 20)
+    p.setNumber(name, 'NumPointsV', 20)
+    p.setNumber(name, 'NumPointsW', 20)
+
+    xmin = box[0]
+    ymin = box[1]
+    zmin = box[2]
+    xmax = box[3]
+    ymax = box[4]
+    zmax = box[5]
+
+    p.setNumber(name, 'X0', xmin)
+    p.setNumber(name, 'Y0', ymin)
+    p.setNumber(name, 'Z0', zmin)
+
+    p.setNumber(name, 'X1', xmax)
+    p.setNumber(name, 'Y1', ymin)
+    p.setNumber(name, 'Z1', zmin)
+
+    p.setNumber(name, 'X2', xmin)
+    p.setNumber(name, 'Y2', ymax)
+    p.setNumber(name, 'Z2', zmin)
+
+    p.setNumber(name, 'X3', xmin)
+    p.setNumber(name, 'Y3', ymin)
+    p.setNumber(name, 'Z3', zmax)
+
+    p.setNumber(name, 'ConnectPoints', 1)
+    p.setNumber(name, 'Boundary', 1)
+
+    p.setNumber(name, 'View', 0)  # TODO value from index of post operation
+    p.run(name)
+    p.setNumber(name, 'View', 1)  # TODO value from index of post operation
+    p.run(name)
+
+    name = 'NearToFarField'
+    p.setNumber(name, 'Wavenumber', wavenumber)
+    p.setNumber(name, 'RFar', 1)
+    p.setNumber(name, 'NumPointsPhi', 50)
+    p.setNumber(name, 'NumPointsTheta', 25)
+    p.setNumber(name, 'EView', 2)
+    p.setNumber(name, 'HView', 3)
+    p.setNumber(name, 'Normalize', 1)
+    p.setNumber(name, 'dB', 1)
+    p.run(name)
+
+
+model = mspa.Mspa(MODEL_NAME)
 
 pro = Problem()
 pro.filename = MODEL_NAME + '.pro'
@@ -73,7 +127,7 @@ fvar['pml_zmax'] = 0.010
 fvar['pml_xmin'] = -0.003
 fvar['pml_ymin'] = -0.003
 fvar['pml_zmin'] = -0.003
-fvar['pml_delta'] = 12.0 * (mspa.dc + mspa.dh)
+fvar['pml_delta'] = 12.0 * (model.dims['dc'] * 2.0 + model.dims['dh'])
 
 
 f = pro.function
@@ -203,7 +257,7 @@ operation.CreateDirectory('build')
 operation.Generate('A')
 operation.Solve('A')
 operation.SaveSolution('A')
-operation.PostOperation('Microwave_e')
+# operation.PostOperation('Microwave_e')
 
 pp = pro.postprocessing
 ppi = pp.add('Microwave_e', 'Microwave_e')
@@ -214,10 +268,6 @@ quantity.add(Name='h_from_e', Type='Local',
              Value='I[] * nu[] * {d e} / (2.0 * Pi * freq)', In='Domain', Jacobian='JVol')
 quantity.add(Name='exh', Type='Local',
              Value='CrossProduct[{e}, Conj[I[] * nu[] * {d e} / (2.0 * Pi * freq)]]', In='Domain', Jacobian='JVol')
-
-# { Name exh ; Value{ // Poynting vector
-#     Local{ [  ] ;
-#       In Domain ;  Jacobian JVol; } } }
 
 
 po = pro.postoperation
@@ -234,9 +284,34 @@ poi0.add(
 
 pro.make_file()
 pro.write_file()
-gmsh.open(pro.filename)
+# gmsh.open(pro.filename)
+# gmsh.merge(pro.filename)
+# gmsh.model.setCurrent('mspa')
+gmsh.merge('./build/e.pos')
+gmsh.merge('./build/h_pml.pos')
+
+minimal_box = True
+if minimal_box:
+    box0 = gmsh.model.occ.getBoundingBox(*model.tags['gnd3d'])
+    box1 = gmsh.model.occ.getBoundingBox(*model.tags['patch3d'])
+    box2 = gmsh.model.occ.getBoundingBox(*model.tags['pcb3d'])
+    box = [0.0] * 6
+    for i in range(3):
+        box[i] = min([box0[i], box1[i], box2[i]])
+        box[i + 3] = max([box0[i + 3], box1[i + 3], box2[i + 3]])
+else:
+    airbox = gmsh.model.occ.getBoundingBox(*model.tags['air3d'])
+    box = [0.0] * 6
+    eps = 1.0e-3
+    for i in range(3):
+        box[i] = airbox[i] + eps
+        box[i + 3] = airbox[i + 3] - eps
+
+_setup_plugins(box, fvar['k0'])
 gmsh.onelab.run()
 # gmsh.model.setCurrent('mspa.geo')
+# gmsh.model.mesh.generate(3)
+# gmsh.write(MODEL_NAME + '.vtk')
 
 
 if '-nopopup' not in sys.argv:
