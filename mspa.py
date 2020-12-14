@@ -4,7 +4,6 @@ import os
 import sys
 import numpy as np
 
-# gmsh.initialize()
 # gmsh.open('mspa.pro')
 # gmsh.onelab.run()
 
@@ -24,87 +23,136 @@ class Mspa(object):
         super().__init__()
 
         self.name = name
+
         mm = 1.0e-3
-        self.dh = 1.5 * mm
-        self.dc = 0.35 * mm
-        self.w0 = 55.49 * mm
-        self.l0 = 42.99 * mm
+        dh = 1.5 * mm
+        dc = 0.35 * mm
+        w0 = 55.49 * mm
+        l0 = 42.99 * mm
 
         pcb_oversize = 1.5
-        self.w1 = w0 * pcb_oversize
-        self.l1 = l0 * pcb_oversize
+        w1 = w0 * pcb_oversize
+        l1 = l0 * pcb_oversize
 
         air_oversize = 1.5
-        self.w2 = w1 * air_oversize
-        self.l2 = l1 * air_oversize
-        self.h2 = 10.0 * dh * air_oversize
+        w2 = w1 * air_oversize
+        l2 = l1 * air_oversize
+        h2 = 10.0 * dh * air_oversize
 
         pml_oversize = 1.5
-        self.w3 = w2 * pml_oversize
-        self.l3 = l2 * pml_oversize
-        self.h3 = h2 * pml_oversize
+        w3 = w2 * pml_oversize
+        l3 = l2 * pml_oversize
+        h3 = h2 * pml_oversize
 
-        self.w_feed = 2.0 * mm
-        self.mesh_size_condutor = 1.5 * mm
-        self.mesh_size_substrate = 1.5 * mm
-        self.mesh_size_environment = 10 * mm
+        w_feed = 2.0 * mm
 
+        self.dims = {}
+        self.dims['dh'] = dh
+        self.dims['dc'] = dc
+        self.dims['w0'] = w0
+        self.dims['l0'] = l0
+        self.dims['w1'] = w1
+        self.dims['l1'] = l1
+        self.dims['w_feed'] = w_feed
+        self.dims['w2'] = w2
+        self.dims['l2'] = l2
+        self.dims['h2'] = h2
+        self.dims['w3'] = w3
+        self.dims['l3'] = l3
+        self.dims['h3'] = h3
+
+        self.tags = {}
+
+        gmsh.initialize()
         gmsh.model.add(self.name)
         self._create_antenna()
         self._create_environment()
+        gmsh.model.occ.synchronize()
         self._set_mesh_settings()
         self._create_groups()
 
-        box = gmsh.model.occ.getBoundingBox()
+        # box = gmsh.model.occ.getBoundingBox()
 
-        gmsh.model.mesh.generate(3)
-        gmsh.write(self.name + '.msh')
+        # gmsh.model.mesh.generate(3)
+        # gmsh.write(self.name + '.msh')
 
     def _create_antenna(self):
         occ = gmsh.model.occ
 
+        dh = self.dims['dh']
+        dc = self.dims['dc']
+        w0 = self.dims['w0']
+        l0 = self.dims['l0']
+        w1 = self.dims['w1']
+        l1 = self.dims['l1']
+        w_feed = self.dims['w_feed']
+
         # patch with feeder
-        patch2d = occ.addRectangle(-w0 * 0.5, -l0 * 0.5, dh, w0, l0)
-        feed2d = occ.addRectangle(-w_feed * 0.5, l0 *
-                                  0.5, dh, w_feed, (l1 - l0) * 0.5)
-        tags, _ = occ.fuse([(2, patch2d)], [(2, feed2d)], 0)
-        patch2d = tags[0][1]
-        tags = occ.extrude([(2, patch2d)], 0.0, 0.0, dc)
-        patch3d = tags[1][1]
+        tag = occ.addRectangle(-w0 * 0.5, -l0 * 0.5, dh, w0, l0)
+        patch2d = (2, tag)
+        tag = occ.addRectangle(-w_feed * 0.5, l0 * 0.5,
+                               dh, w_feed, (l1 - l0) * 0.5)
+        feed2d = (2, tag)
+        tags, _ = occ.fuse([patch2d], [feed2d], 0)
+        patch2d = tags[0]
+        tags = occ.extrude([patch2d], 0.0, 0.0, dc)
+        patch3d = tags[1]
 
         # substrate rect
-        pcb2d = occ.addRectangle(-w1 * 0.5, -l1 * 0.5, 0.0, w1, l1)
+        tag = occ.addRectangle(-w1 * 0.5, -l1 * 0.5, 0.0, w1, l1)
+        pcb2d = (2, tag)
         # port points on substrate rect
-        port_point0 = occ.addPoint(-w_feed * 0.5, l1 * 0.5, 0.0)
-        port_point1 = occ.addPoint(w_feed * 0.5, l1 * 0.5, 0.0)
-        tags, _ = occ.fragment([(2, pcb2d)], [(0, port_point0),
-                                              (0, port_point1)])
+        tag = occ.addPoint(-w_feed * 0.5, l1 * 0.5, 0.0)
+        port0d0 = (0, tag)
+        tag = occ.addPoint(w_feed * 0.5, l1 * 0.5, 0.0)
+        port0d1 = [0, tag]
+        tags, _ = occ.fragment([pcb2d], [port0d0, port0d1])
         # extrude substrate and port
-        pcb2d = tags[0][1]
-        tags = occ.extrude([(2, pcb2d)], 0.0, 0.0, dh)
-        pcb3d = tags[1][1]
+        pcb2d = tags[0]
+        tags = occ.extrude([pcb2d], 0.0, 0.0, dh)
+        pcb3d = tags[1]
 
         # extrude gnd foil
-        tags = occ.extrude([(2, pcb2d)], 0.0, 0.0, -dc)
-        gnd3d = tags[1][1]
+        tags = occ.extrude([pcb2d], 0.0, 0.0, -dc)
+        gnd3d = tags[1]
 
-        occ.synchronize()
+        self.tags['pcb2d'] = pcb2d
+        self.tags['pcb3d'] = pcb3d
+        self.tags['patch2d'] = patch2d
+        self.tags['patch3d'] = patch3d
+        self.tags['gnd3d'] = gnd3d
 
     def _create_environment(self):
         occ = gmsh.model.occ
 
+        dh = self.dims['dh']
+        w2 = self.dims['w2']
+        l2 = self.dims['l2']
+        h2 = self.dims['h2']
+        w3 = self.dims['w3']
+        l3 = self.dims['l3']
+        h3 = self.dims['h3']
+
+        pcb2d = self.tags['pcb2d']
+        pcb3d = self.tags['pcb3d']
+        patch2d = self.tags['patch2d']
+        patch3d = self.tags['patch3d']
+        gnd3d = self.tags['gnd3d']
+
         # airbox
-        air3d = occ.addBox(-w2 * 0.5, -l2 * 0.5, (dh - h2) * 0.5, w2, l2, h2)
-        tags, _ = occ.cut([(3, air3d)], [(3, pcb3d), (3, gnd3d),
-                                         (3, patch3d)], 0, True, False)
-        air3d = tags[0][1]
+        tag = occ.addBox(-w2 * 0.5, -l2 * 0.5, (dh - h2) * 0.5, w2, l2, h2)
+        air3d = (3, tag)
+        tags, _ = occ.cut([air3d], [pcb3d, gnd3d, patch3d], 0, True, False)
+        air3d = tags[0]
         # pml - perfect matched layer
-        pml3d = occ.addBox(-w3 * 0.5, -l3 * 0.5, (dh - h3) * 0.5, w3, l3, h3)
-        tags, _ = occ.cut([(3, pml3d)], [(3, air3d)], 0, True, False)
-        pml3d = tags[0][1]
+        tag = occ.addBox(-w3 * 0.5, -l3 * 0.5, (dh - h3) * 0.5, w3, l3, h3)
+        pml3d = (3, tag)
+        tags, _ = occ.cut([pml3d], [air3d], 0, True, False)
+        pml3d = tags[0]
         occ.remove([tags[1]], recursive=True)
 
-        occ.synchronize()
+        self.tags['air3d'] = air3d
+        self.tags['pml3d'] = pml3d
 
     def _set_mesh_settings(self):
         # general settings
@@ -113,19 +161,39 @@ class Mspa(object):
         gmsh.option.setNumber('Mesh.Smoothing', 5)
 
         # mesh sizes by elements
-        tags = gmsh.model.getBoundary([(3, pcb3d)], False, False, True)
+        mm = 1.0e-3
+        mesh_size_condutor = 1.5 * mm
+        mesh_size_substrate = 1.5 * mm
+        mesh_size_environment = 10 * mm
+        air3d = self.tags['air3d']
+        gnd3d = self.tags['gnd3d']
+        patch3d = self.tags['patch3d']
+        pcb3d = self.tags['pcb3d']
+        pml3d = self.tags['pml3d']
+
+        tags = gmsh.model.getBoundary([pcb3d], False, False, True)
         gmsh.model.mesh.setSize(tags, mesh_size_substrate)
 
-        tags = gmsh.model.getBoundary(
-            [(3, air3d), (3, pml3d)], False, False, True)
+        tags = gmsh.model.getBoundary([air3d, pml3d], False, False, True)
         gmsh.model.mesh.setSize(tags, mesh_size_environment)
 
-        tags = gmsh.model.getBoundary(
-            [(3, patch3d), (3, gnd3d)], False, False, True)
+        tags = gmsh.model.getBoundary([patch3d, gnd3d], False, False, True)
         gmsh.model.mesh.setSize(tags, mesh_size_condutor)
 
     def _create_groups(self):
-        tag = gmsh.model.addPhysicalGroup(2, [patch2d, pcb2d])
+        dh = self.dims['dh']
+        l1 = self.dims['l1']
+        w_feed = self.dims['w_feed']
+
+        air3d = self.tags['air3d']
+        gnd3d = self.tags['gnd3d']
+        patch2d = self.tags['patch2d']
+        patch3d = self.tags['patch3d']
+        pcb2d = self.tags['pcb2d']
+        pcb3d = self.tags['pcb3d']
+        pml3d = self.tags['pml3d']
+
+        tag = gmsh.model.addPhysicalGroup(2, [patch2d[1], pcb2d[1]])
         gmsh.model.setPhysicalName(2, tag, 'Conductor')
 
         eps = 1.0e-4
@@ -134,20 +202,20 @@ class Mspa(object):
         tag = gmsh.model.addPhysicalGroup(2, [tags[0][1]])
         gmsh.model.setPhysicalName(2, tag, 'SkinFeed')
 
-        tag = gmsh.model.addPhysicalGroup(3, [patch3d, gnd3d])
+        tag = gmsh.model.addPhysicalGroup(3, [patch3d[1], gnd3d[1]])
         gmsh.model.setPhysicalName(3, tag, 'ConductorVolume')
 
-        tag = gmsh.model.addPhysicalGroup(3, [pcb3d])
+        tag = gmsh.model.addPhysicalGroup(3, [pcb3d[1]])
         gmsh.model.setPhysicalName(3, tag, 'Substrate')
 
-        tag = gmsh.model.addPhysicalGroup(3, [air3d])
+        tag = gmsh.model.addPhysicalGroup(3, [air3d[1]])
         gmsh.model.setPhysicalName(3, tag, 'Air')
 
-        tag = gmsh.model.addPhysicalGroup(3, [pml3d])
+        tag = gmsh.model.addPhysicalGroup(3, [pml3d[1]])
         gmsh.model.setPhysicalName(3, tag, 'Pml')
 
 
-mspa = Mspa('mspa')
+# mspa = Mspa('mspa')
 # if '-nopopup' not in sys.argv:
 #     gmsh.fltk.run()
 
