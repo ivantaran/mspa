@@ -103,7 +103,8 @@ for g in groups:
     name = gmsh.model.getPhysicalName(g[0], g[1])
     pro.group.add(name, tag)
 pro.group.Region('SurBC', 'SkinFeed')
-pro.group.Region('DomainTot', ['Substrate', 'SkinFeed', 'Air', 'Pml'])
+pro.group.Region(
+    'DomainTot', ['Substrate', 'SkinFeed', 'Air', 'Pml', 'SigmaInf'])
 pro.group.Region('DomainC', [])  # TODO remove
 pro.group.Region('Domain', ['Substrate', 'Air', 'Pml'])
 pro.group.define('DomainS')  # TODO remove
@@ -138,9 +139,9 @@ for name, value in fvar.items():
     f.constant(name, value)
 
 f.add('I', f.Complex(0, 1))
-f.add('epsilon', 'ep0', region=['Air', 'SkinFeed'])
+f.add('epsilon', 'ep0', region=['Air', 'SkinFeed', 'SigmaInf'])
 f.add('epsilon', 'epr * ep0', region='Substrate')
-f.add('nu', 'nu0', region=['Air', 'Substrate', 'SkinFeed'])
+f.add('nu', 'nu0', region=['Air', 'Substrate', 'SkinFeed', 'SigmaInf'])
 
 f.add('sigma', '6.0e7')  # Copper
 f.define('js0')  # TODO remove
@@ -171,8 +172,8 @@ ef = constr.add('ElectricField')
 c0 = ef.add()
 c0.add(Region='SkinFeed', Type='AssignFromResolution',
        NameOfResolution='Microwave_e_BC')
-c0.add(Region='Conductor', Type='Assign', Value=0.0)
-c0.add(Region='Pml', Type='Assign', Value=0.0)
+c0.add(Region='SkinConductor', Type='Assign', Value=0.0)
+c0.add(Region='SigmaInf', Type='Assign', Value=0.0)
 
 jacobian = pro.jacobian
 for js, s in enumerate(['Vol', 'Sur']):
@@ -285,13 +286,12 @@ poi0.add(
 pro.make_file()
 pro.write_file()
 # gmsh.open(pro.filename)
-# gmsh.merge(pro.filename)
 # gmsh.model.setCurrent('mspa')
+# gmsh.merge(pro.filename)
 
 gmsh.merge('./build/e.pos')
 gmsh.merge('./build/h_pml.pos')
-
-minimal_box = False
+minimal_box = True
 if minimal_box:
     box0 = gmsh.model.occ.getBoundingBox(*model.tags['gnd3d'])
     box1 = gmsh.model.occ.getBoundingBox(*model.tags['patch3d'])
@@ -303,11 +303,10 @@ if minimal_box:
 else:
     airbox = gmsh.model.occ.getBoundingBox(*model.tags['air3d'])
     box = [0.0] * 6
-    eps = 1.0e-3
+    eps = 1.0e-9
     for i in range(3):
         box[i] = airbox[i] + eps
         box[i + 3] = airbox[i + 3] - eps
-
 _setup_plugins(box, fvar['k0'])
 
 # gmsh.model.setCurrent('mspa.geo')
