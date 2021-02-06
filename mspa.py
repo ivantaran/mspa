@@ -93,8 +93,6 @@ class Mspa(object):
         feed2d = (2, tag)
         tags, _ = occ.fuse([patch2d], [feed2d], 0)
         patch2d = tags[0]
-        tags = occ.extrude([patch2d], 0.0, 0.0, dc)
-        patch3d = tags[1]
 
         # substrate rect
         tag = occ.addRectangle(-w1 * 0.5, -l1 * 0.5, 0.0, w1, l1)
@@ -110,51 +108,44 @@ class Mspa(object):
         tags = occ.extrude([pcb2d], 0.0, 0.0, dh)
         pcb3d = tags[1]
 
-        # extrude gnd foil
-        tags = occ.extrude([pcb2d], 0.0, 0.0, -dc)
-        gnd3d = tags[1]
-
         occ.synchronize()
-        copper_skin = gmsh.model.getBoundary([gnd3d, patch3d])
 
-        self.tags['pcb2d'] = pcb2d
         self.tags['pcb3d'] = pcb3d
         self.tags['patch2d'] = patch2d
-        self.tags['patch3d'] = patch3d
-        self.tags['gnd3d'] = gnd3d
-        self.tags['copper_skin'] = copper_skin
+        self.tags['gnd2d'] = pcb2d
 
     def _create_environment(self):
         occ = gmsh.model.occ
 
         dh = self.dims['dh']
         w2 = self.dims['w2']
+        l1 = self.dims['l1']
         l2 = self.dims['l2']
         h2 = self.dims['h2']
         w3 = self.dims['w3']
         l3 = self.dims['l3']
         h3 = self.dims['h3']
 
-        pcb2d = self.tags['pcb2d']
         pcb3d = self.tags['pcb3d']
-        patch2d = self.tags['patch2d']
-        patch3d = self.tags['patch3d']
-        gnd3d = self.tags['gnd3d']
 
         # airbox
-        tag = occ.addBox(-w2 * 0.5, -l2 * 0.5, (dh - h2) * 0.5, w2, l2, h2)
+        # tag = occ.addBox(-w2 * 0.5, -l2 * 0.5, (dh - h2) * 0.5, w2, l2, h2)
+        tag = occ.addBox(-w2 * 0.5, -l2 * 0.5, (dh - h2)
+                         * 0.5, w2, l2 - 0.5 * l1, h2)
         air3d = (3, tag)
-        tags, _ = occ.cut([air3d], [pcb3d, gnd3d, patch3d], 0, True, False)
+        tags, _ = occ.cut([air3d], [pcb3d], 0, True, False)
         air3d = tags[0]
         # pml - perfect matched layer
-        tag = occ.addBox(-w3 * 0.5, -l3 * 0.5, (dh - h3) * 0.5, w3, l3, h3)
+        # tag = occ.addBox(-w3 * 0.5, -l3 * 0.5, (dh - h3) * 0.5, w3, l3, h3)
+        tag = occ.addBox(-w3 * 0.5, -l3 * 0.5, (dh - h3)
+                         * 0.5, w3, l3 - 0.5 * l1, h3)
         pml3d = (3, tag)
         occ.synchronize()
         pmlbox = gmsh.model.getBoundary([pml3d])
 
         tags, _ = occ.cut([pml3d], [air3d], 0, True, False)
         pml3d = tags[0]
-        occ.remove([tags[1]], recursive=True)
+        # occ.remove([tags[1]], recursive=True)
 
         self.tags['air3d'] = air3d
         self.tags['pml3d'] = pml3d
@@ -172,8 +163,8 @@ class Mspa(object):
         mesh_size_substrate = 3.0 * mm
         mesh_size_environment = 10.0 * mm
         air3d = self.tags['air3d']
-        gnd3d = self.tags['gnd3d']
-        patch3d = self.tags['patch3d']
+        gnd2d = self.tags['gnd2d']
+        patch2d = self.tags['patch2d']
         pcb3d = self.tags['pcb3d']
         pml3d = self.tags['pml3d']
 
@@ -183,7 +174,7 @@ class Mspa(object):
         tags = gmsh.model.getBoundary([pcb3d], False, False, True)
         gmsh.model.mesh.setSize(tags, mesh_size_substrate)
 
-        tags = gmsh.model.getBoundary([patch3d, gnd3d], False, False, True)
+        tags = gmsh.model.getBoundary([patch2d, gnd2d], False, False, True)
         gmsh.model.mesh.setSize(tags, mesh_size_condutor)
 
     def _create_groups(self):
@@ -192,14 +183,11 @@ class Mspa(object):
         w_feed = self.dims['w_feed']
 
         air3d = self.tags['air3d']
-        gnd3d = self.tags['gnd3d']
+        gnd2d = self.tags['gnd2d']
         patch2d = self.tags['patch2d']
-        patch3d = self.tags['patch3d']
-        pcb2d = self.tags['pcb2d']
         pcb3d = self.tags['pcb3d']
         pml3d = self.tags['pml3d']
         pmlbox = self.tags['pmlbox']
-        copper_skin = self.tags['copper_skin']
 
         eps = 1.0e-4
         tags = gmsh.model.occ.getEntitiesInBoundingBox(
@@ -208,8 +196,7 @@ class Mspa(object):
         tag = gmsh.model.addPhysicalGroup(2, [tag_feed])
         gmsh.model.setPhysicalName(2, tag, 'SkinFeed')
 
-        ids = np.array(copper_skin)[:, 1]
-        tag = gmsh.model.addPhysicalGroup(2, ids)
+        tag = gmsh.model.addPhysicalGroup(2, [patch2d[1], gnd2d[1]])
         gmsh.model.setPhysicalName(2, tag, 'SkinConductor')
 
         # tag = gmsh.model.getBoundary([pcb3d])
