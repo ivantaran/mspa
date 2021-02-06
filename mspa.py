@@ -168,8 +168,8 @@ class Mspa(object):
 
         # mesh sizes by elements
         mm = 1.0e-3
-        mesh_size_condutor = 1.5 * mm
-        mesh_size_substrate = 1.5 * mm
+        mesh_size_condutor = 3.0 * mm
+        mesh_size_substrate = 3.0 * mm
         mesh_size_environment = 10.0 * mm
         air3d = self.tags['air3d']
         gnd3d = self.tags['gnd3d']
@@ -177,11 +177,11 @@ class Mspa(object):
         pcb3d = self.tags['pcb3d']
         pml3d = self.tags['pml3d']
 
-        tags = gmsh.model.getBoundary([pcb3d], False, False, True)
-        gmsh.model.mesh.setSize(tags, mesh_size_substrate)
-
         tags = gmsh.model.getBoundary([air3d, pml3d], False, False, True)
         gmsh.model.mesh.setSize(tags, mesh_size_environment)
+
+        tags = gmsh.model.getBoundary([pcb3d], False, False, True)
+        gmsh.model.mesh.setSize(tags, mesh_size_substrate)
 
         tags = gmsh.model.getBoundary([patch3d, gnd3d], False, False, True)
         gmsh.model.mesh.setSize(tags, mesh_size_condutor)
@@ -212,13 +212,13 @@ class Mspa(object):
         tag = gmsh.model.addPhysicalGroup(2, ids)
         gmsh.model.setPhysicalName(2, tag, 'SkinConductor')
 
-        tag = gmsh.model.getBoundary([pcb3d])
-        tag = np.array(tag)[:, 1]
-        tag = tag[tag != tag_feed]
-        tag = gmsh.model.addPhysicalGroup(2, tag)
-        gmsh.model.setPhysicalName(2, tag, 'Substrate')
-        # tag = gmsh.model.addPhysicalGroup(3, [pcb3d[1]])
-        # gmsh.model.setPhysicalName(3, tag, 'Substrate')
+        # tag = gmsh.model.getBoundary([pcb3d])
+        # tag = np.array(tag)[:, 1]
+        # tag = tag[tag != tag_feed]
+        # tag = gmsh.model.addPhysicalGroup(2, tag)
+        # gmsh.model.setPhysicalName(2, tag, 'Substrate')
+        tag = gmsh.model.addPhysicalGroup(3, [pcb3d[1]])
+        gmsh.model.setPhysicalName(3, tag, 'Substrate')
 
         tag = gmsh.model.addPhysicalGroup(3, [air3d[1]])
         gmsh.model.setPhysicalName(3, tag, 'Air')
