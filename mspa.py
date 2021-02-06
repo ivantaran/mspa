@@ -117,12 +117,26 @@ class Mspa(object):
         occ.synchronize()
         copper_skin = gmsh.model.getBoundary([gnd3d, patch3d])
 
-        self.tags['pcb2d'] = pcb2d
-        self.tags['pcb3d'] = pcb3d
+        eps = 1.0e-4
+        tags = gmsh.model.occ.getEntitiesInBoundingBox(
+            -w_feed * 0.5 - eps, l1 * 0.5 - eps, -eps, w_feed * 0.5 + eps, l1 * 0.5 + eps, dh + eps, 2)
+        feed = tags[0]
+        tags = occ.extrude([feed], 0.0, -dh, 0.0)
+        feed3d = tags[1]
+        occ.synchronize()
+        tags, _ = occ.cut([pcb3d], [feed3d], 0, True, False)
+        pcb3d = tags[0]
+        feed = gmsh.model.getBoundary([feed3d])
+        feed = feed[:3] + feed[5:]
+
+        self.tags['copper_skin'] = copper_skin
+        self.tags['feed'] = feed
+        self.tags['feed3d'] = feed3d
+        self.tags['gnd3d'] = gnd3d
         self.tags['patch2d'] = patch2d
         self.tags['patch3d'] = patch3d
-        self.tags['gnd3d'] = gnd3d
-        self.tags['copper_skin'] = copper_skin
+        self.tags['pcb2d'] = pcb2d
+        self.tags['pcb3d'] = pcb3d
 
     def _create_environment(self):
         occ = gmsh.model.occ
@@ -140,11 +154,13 @@ class Mspa(object):
         patch2d = self.tags['patch2d']
         patch3d = self.tags['patch3d']
         gnd3d = self.tags['gnd3d']
+        feed3d = self.tags['feed3d']
 
         # airbox
         tag = occ.addBox(-w2 * 0.5, -l2 * 0.5, (dh - h2) * 0.5, w2, l2, h2)
         air3d = (3, tag)
-        tags, _ = occ.cut([air3d], [pcb3d, gnd3d, patch3d], 0, True, False)
+        tags, _ = occ.cut(
+            [air3d], [pcb3d, gnd3d, patch3d, feed3d], 0, True, False)
         air3d = tags[0]
         # pml - perfect matched layer
         tag = occ.addBox(-w3 * 0.5, -l3 * 0.5, (dh - h3) * 0.5, w3, l3, h3)
@@ -200,12 +216,10 @@ class Mspa(object):
         pml3d = self.tags['pml3d']
         pmlbox = self.tags['pmlbox']
         copper_skin = self.tags['copper_skin']
+        feed = self.tags['feed']
 
-        eps = 1.0e-4
-        tags = gmsh.model.occ.getEntitiesInBoundingBox(
-            -w_feed * 0.5 - eps, l1 * 0.5 - eps, -eps, w_feed * 0.5 + eps, l1 * 0.5 + eps, dh + eps, 2)
-        tag_feed = tags[0][1]
-        tag = gmsh.model.addPhysicalGroup(2, [tag_feed])
+        ids = np.array(feed)[:, 1]
+        tag = gmsh.model.addPhysicalGroup(2, ids)
         gmsh.model.setPhysicalName(2, tag, 'SkinFeed')
 
         ids = np.array(copper_skin)[:, 1]
