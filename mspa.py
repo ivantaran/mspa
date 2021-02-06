@@ -168,8 +168,8 @@ class Mspa(object):
 
         # mesh sizes by elements
         mm = 1.0e-3
-        mesh_size_condutor = 3.0 * mm
-        mesh_size_substrate = 3.0 * mm
+        mesh_size_condutor = 1.0 * mm
+        mesh_size_substrate = 1.0 * mm
         mesh_size_environment = 10.0 * mm
         air3d = self.tags['air3d']
         gnd3d = self.tags['gnd3d']
@@ -188,6 +188,7 @@ class Mspa(object):
 
     def _create_groups(self):
         dh = self.dims['dh']
+        dc = self.dims['dc']
         l1 = self.dims['l1']
         w_feed = self.dims['w_feed']
 
@@ -203,7 +204,15 @@ class Mspa(object):
 
         eps = 1.0e-4
         tags = gmsh.model.occ.getEntitiesInBoundingBox(
-            -w_feed * 0.5 - eps, l1 * 0.5 - eps, -eps, w_feed * 0.5 + eps, l1 * 0.5 + eps, dh + eps, 2)
+            -w_feed * 0.5 - eps,
+            l1 * 0.5 - eps,
+            dh - eps,
+            w_feed * 0.5 + eps,
+            l1 * 0.5 + eps,
+            dh + dc + eps,
+            2
+        )
+
         tag_feed = tags[0][1]
         tag = gmsh.model.addPhysicalGroup(2, [tag_feed])
         gmsh.model.setPhysicalName(2, tag, 'SkinFeed')
