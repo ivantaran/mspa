@@ -91,28 +91,25 @@ class Mspa(object):
         tag = occ.addRectangle(-w_feed * 0.5, l0 * 0.5,
                                dh, w_feed, (l1 - l0) * 0.5)
         feed2d = (2, tag)
+        occ.synchronize()
+        tags = gmsh.model.getBoundary([feed2d])
+        feed1d = tags[0]
         tags, _ = occ.fuse([patch2d], [feed2d], 0)
         patch2d = tags[0]
 
         # substrate rect
         tag = occ.addRectangle(-w1 * 0.5, -l1 * 0.5, 0.0, w1, l1)
         pcb2d = (2, tag)
-        # port points on substrate rect
-        tag = occ.addPoint(-w_feed * 0.5, l1 * 0.5, 0.0)
-        port0d0 = (0, tag)
-        tag = occ.addPoint(w_feed * 0.5, l1 * 0.5, 0.0)
-        port0d1 = [0, tag]
-        tags, _ = occ.fragment([pcb2d], [port0d0, port0d1])
-        # extrude substrate and port
-        pcb2d = tags[0]
+        # extrude substrate
         tags = occ.extrude([pcb2d], 0.0, 0.0, dh)
         pcb3d = tags[1]
 
         occ.synchronize()
 
-        self.tags['pcb3d'] = pcb3d
-        self.tags['patch2d'] = patch2d
+        self.tags['feed1d'] = feed1d
         self.tags['gnd2d'] = pcb2d
+        self.tags['patch2d'] = patch2d
+        self.tags['pcb3d'] = pcb3d
 
     def _create_environment(self):
         occ = gmsh.model.occ
@@ -129,16 +126,12 @@ class Mspa(object):
         pcb3d = self.tags['pcb3d']
 
         # airbox
-        # tag = occ.addBox(-w2 * 0.5, -l2 * 0.5, (dh - h2) * 0.5, w2, l2, h2)
-        tag = occ.addBox(-w2 * 0.5, -l2 * 0.5, (dh - h2)
-                         * 0.5, w2, l2 - 0.5 * l1, h2)
+        tag = occ.addBox(-w2 * 0.5, -l2 * 0.5, (dh - h2) * 0.5, w2, l2, h2)
         air3d = (3, tag)
         tags, _ = occ.cut([air3d], [pcb3d], 0, True, False)
         air3d = tags[0]
         # pml - perfect matched layer
-        # tag = occ.addBox(-w3 * 0.5, -l3 * 0.5, (dh - h3) * 0.5, w3, l3, h3)
-        tag = occ.addBox(-w3 * 0.5, -l3 * 0.5, (dh - h3)
-                         * 0.5, w3, l3 - 0.5 * l1, h3)
+        tag = occ.addBox(-w3 * 0.5, -l3 * 0.5, (dh - h3) * 0.5, w3, l3, h3)
         pml3d = (3, tag)
         occ.synchronize()
         pmlbox = gmsh.model.getBoundary([pml3d])
@@ -183,18 +176,15 @@ class Mspa(object):
         w_feed = self.dims['w_feed']
 
         air3d = self.tags['air3d']
+        feed1d = self.tags['feed1d']
         gnd2d = self.tags['gnd2d']
         patch2d = self.tags['patch2d']
         pcb3d = self.tags['pcb3d']
         pml3d = self.tags['pml3d']
         pmlbox = self.tags['pmlbox']
 
-        eps = 1.0e-4
-        tags = gmsh.model.occ.getEntitiesInBoundingBox(
-            -w_feed * 0.5 - eps, l1 * 0.5 - eps, -eps, w_feed * 0.5 + eps, l1 * 0.5 + eps, dh + eps, 2)
-        tag_feed = tags[0][1]
-        tag = gmsh.model.addPhysicalGroup(2, [tag_feed])
-        gmsh.model.setPhysicalName(2, tag, 'SkinFeed')
+        tag = gmsh.model.addPhysicalGroup(1, [feed1d[1]])
+        gmsh.model.setPhysicalName(1, tag, 'SkinFeed')
 
         tag = gmsh.model.addPhysicalGroup(2, [patch2d[1], gnd2d[1]])
         gmsh.model.setPhysicalName(2, tag, 'SkinConductor')

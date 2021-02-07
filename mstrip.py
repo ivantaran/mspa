@@ -283,33 +283,26 @@ poi0.add(
     'exh', OnElementsOf='Region[{Domain, -Pml}]', File='./build/exh_pml.pos')
 
 
-# pro.make_file()
-# pro.write_file()
-# gmsh.open(pro.filename)
+pro.make_file()
+pro.write_file()
+gmsh.open(pro.filename)
 
 # gmsh.model.setCurrent('mspa')
 # gmsh.merge(pro.filename)
 
-gmsh.merge('./build/e.pos')
-gmsh.merge('./build/h_pml.pos')
-minimal_box = True
-if minimal_box:
-    box = gmsh.model.occ.getBoundingBox(*model.tags['pcb3d'])
-    # box0 = gmsh.model.occ.getBoundingBox(*model.tags['gnd3d'])
-    # box1 = gmsh.model.occ.getBoundingBox(*model.tags['patch3d'])
-    # box2 = gmsh.model.occ.getBoundingBox(*model.tags['pcb3d'])
-    # box = [0.0] * 6
-    # for i in range(3):
-    #     box[i] = min([box0[i], box1[i], box2[i]])
-    #     box[i + 3] = max([box0[i + 3], box1[i + 3], box2[i + 3]])
-else:
-    airbox = gmsh.model.occ.getBoundingBox(*model.tags['air3d'])
-    box = [0.0] * 6
-    eps = 1.0e-9
-    for i in range(3):
-        box[i] = airbox[i] + eps
-        box[i + 3] = airbox[i + 3] - eps
-_setup_plugins(box, fvar['k0'])
+# gmsh.merge('./build/e.pos')
+# gmsh.merge('./build/h_pml.pos')
+# minimal_box = True
+# if minimal_box:
+#     box = gmsh.model.occ.getBoundingBox(*model.tags['pcb3d'])
+# else:
+#     airbox = gmsh.model.occ.getBoundingBox(*model.tags['air3d'])
+#     box = [0.0] * 6
+#     eps = 1.0e-9
+#     for i in range(3):
+#         box[i] = airbox[i] + eps
+#         box[i + 3] = airbox[i + 3] - eps
+# _setup_plugins(box, fvar['k0'])
 
 # gmsh.model.setCurrent('mspa.geo')
 # gmsh.model.mesh.generate(3)
