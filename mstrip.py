@@ -92,7 +92,7 @@ def _setup_plugins(box, wavenumber):
 
 
 model = mspa.Mspa(MODEL_NAME)
-gmsh.model.mesh.generate(2)
+gmsh.model.mesh.generate(3)
 gmsh.write(MODEL_NAME + '.msh')
 
 pro = Problem()
@@ -284,9 +284,9 @@ poi0.add(
     'exh', OnElementsOf='Region[{Domain, -Pml}]', File='./build/exh_pml.pos')
 
 
-# pro.make_file()
-# pro.write_file()
-# gmsh.open(pro.filename)
+pro.make_file()
+pro.write_file()
+gmsh.open(pro.filename)
 
 # gmsh.merge('./build/e.pos')
 # gmsh.merge('./build/h_pml.pos')

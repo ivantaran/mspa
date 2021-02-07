@@ -71,23 +71,26 @@ class Mspa(object):
         tag = occ.addBox(-0.5 * w_sub, -0.5 * l_sub, -0.5 * d, w_sub, l_sub, d)
         vol_substrate = (3, tag)
 
-        tag = occ.addBox(-0.5 * w_path, -0.5 * l_patch,
-                         -0.5 * d, w_path, l_patch, d)
-        vol_patch = (3, tag)
+        tag = occ.addRectangle(-0.5 * w_path, -0.5 *
+                               l_patch, 0.5 * d, w_path, l_patch)
+        sur_patch = (2, tag)
 
-        tag = occ.addBox(-0.5 * w_stub, -0.5 * l_stub,
-                         -0.5 * d, w_stub, l_stub, d)
-        vol_stub1 = (3, tag)
-        occ.translate([vol_stub1], 0.5 * (w_stub + w_line),
+        tag = occ.addRectangle(-0.5 * w_stub, -0.5 *
+                               l_stub, 0.5 * d, w_stub, l_stub)
+        sur_stub1 = (2, tag)
+        occ.translate([sur_stub1], 0.5 * (w_stub + w_line),
                       0.5 * (l_stub - l_patch), 0.0)
 
-        tags = occ.copy([vol_stub1])
-        vol_stub2 = tags[0]
-        occ.translate([vol_stub2], -(w_stub + w_line), 0.0, 0.0)
+        tags = occ.copy([sur_stub1])
+        sur_stub2 = tags[0]
+        occ.translate([sur_stub2], -(w_stub + w_line), 0.0, 0.0)
 
-        tags, _ = occ.cut([vol_patch], [vol_stub1, vol_stub2],
+        tags, _ = occ.cut([sur_patch], [sur_stub1, sur_stub2],
                           tag=0, removeObject=True, removeTool=True)
-        vol_patch = tags[0]
+        sur_patch = tags[0]
+
+        tags = occ.extrude([(1, 20)], 0.0, 0.0, -d)
+        sur_feed = tags[1]
 
         tag = occ.addSphere(0.0, 0.0, 0.0, l_sub)
         vol_air = (3, tag)
@@ -105,11 +108,12 @@ class Mspa(object):
         tags, _ = occ.cut([vol_air], [vol_substrate],
                           tag=0, removeObject=True, removeTool=False)
         vol_air = tags[0]
+
         occ.synchronize()
 
-        self.tags['sur_feed'] = (2, 18)
+        self.tags['sur_feed'] = sur_feed
         self.tags['sur_gnd'] = (2, 5)
-        self.tags['sur_patch'] = (2, 8)
+        self.tags['sur_patch'] = sur_patch
         self.tags['sur_pml'] = sur_pml
         self.tags['vol_air'] = vol_air
         self.tags['vol_pml'] = vol_pml
