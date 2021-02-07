@@ -92,7 +92,7 @@ def _setup_plugins(box, wavenumber):
 
 
 model = mspa.Mspa(MODEL_NAME)
-gmsh.model.mesh.generate(3)
+gmsh.model.mesh.generate(2)
 gmsh.write(MODEL_NAME + '.msh')
 
 pro = Problem()
@@ -118,7 +118,7 @@ fvar = {}
 fvar['mu0'] = 4.0e-7 * pi
 fvar['nu0'] = 1.0 / fvar['mu0']
 fvar['ep0'] = 8.854187817e-12
-fvar['epr'] = 4.7  # Dielectric constant for FR4 is ~4.5
+fvar['epr'] = 3.38  # Dielectric constant for FR4 is ~4.5
 fvar['zl'] = 50.0  # Ohms load resistance
 fvar['eta0'] = 120.0 * pi  # eta0 = Sqrt(mu0/eps0)
 fvar['freq'] = freq
@@ -130,7 +130,8 @@ fvar['pml_zmax'] = 0.010
 fvar['pml_xmin'] = -0.003
 fvar['pml_ymin'] = -0.003
 fvar['pml_zmin'] = -0.003
-fvar['pml_delta'] = 12.0 * (model.dims['dc'] * 2.0 + model.dims['dh'])
+dc = 0.0  # 0.035e-3
+fvar['pml_delta'] = 12.0 * (dc * 2.0 + model.dims['d'])
 
 
 f = pro.function
@@ -283,12 +284,9 @@ poi0.add(
     'exh', OnElementsOf='Region[{Domain, -Pml}]', File='./build/exh_pml.pos')
 
 
-pro.make_file()
-pro.write_file()
-gmsh.open(pro.filename)
-
-# gmsh.model.setCurrent('mspa')
-# gmsh.merge(pro.filename)
+# pro.make_file()
+# pro.write_file()
+# gmsh.open(pro.filename)
 
 # gmsh.merge('./build/e.pos')
 # gmsh.merge('./build/h_pml.pos')
@@ -303,10 +301,6 @@ gmsh.open(pro.filename)
 #         box[i] = airbox[i] + eps
 #         box[i + 3] = airbox[i + 3] - eps
 # _setup_plugins(box, fvar['k0'])
-
-# gmsh.model.setCurrent('mspa.geo')
-# gmsh.model.mesh.generate(3)
-# gmsh.write(MODEL_NAME + '.vtk')
 
 
 gmsh.onelab.run()
