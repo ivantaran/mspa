@@ -288,19 +288,19 @@ pro.make_file()
 pro.write_file()
 gmsh.open(pro.filename)
 
-# gmsh.merge('./build/e.pos')
-# gmsh.merge('./build/h_pml.pos')
-# minimal_box = True
-# if minimal_box:
-#     box = gmsh.model.occ.getBoundingBox(*model.tags['pcb3d'])
-# else:
-#     airbox = gmsh.model.occ.getBoundingBox(*model.tags['air3d'])
-#     box = [0.0] * 6
-#     eps = 1.0e-9
-#     for i in range(3):
-#         box[i] = airbox[i] + eps
-#         box[i + 3] = airbox[i + 3] - eps
-# _setup_plugins(box, fvar['k0'])
+gmsh.merge('./build/e.pos')
+gmsh.merge('./build/h_pml.pos')
+minimal_box = True
+if minimal_box:
+    box = gmsh.model.occ.getBoundingBox(*model.tags['vol_substrate'])
+else:
+    airbox = gmsh.model.occ.getBoundingBox(*model.tags['air3d'])
+    box = [0.0] * 6
+    eps = 1.0e-9
+    for i in range(3):
+        box[i] = airbox[i] + eps
+        box[i + 3] = airbox[i + 3] - eps
+_setup_plugins(box, fvar['k0'])
 
 
 gmsh.onelab.run()

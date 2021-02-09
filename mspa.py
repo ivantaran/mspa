@@ -109,15 +109,21 @@ class Mspa(object):
                           tag=0, removeObject=True, removeTool=False)
         vol_air = tags[0]
 
+        tags, _ = occ.cut([vol_substrate], [vol_patch],
+                          tag=0, removeObject=True, removeTool=False)
+        vol_substrate = tags[0]
+
         occ.synchronize()
 
-        self.tags['sur_feed'] = sur_feed
-        self.tags['sur_gnd'] = (2, 5)
-        self.tags['sur_patch'] = sur_patch
+        self.tags['sur_feed'] = (2, 18)
+        self.tags['sur_gnd'] = (2, 24)
+        self.tags['sur_gnd1'] = (2, 11)
+        self.tags['sur_patch'] = (2, 9)
         self.tags['sur_pml'] = sur_pml
         self.tags['vol_air'] = vol_air
+        self.tags['vol_patch'] = vol_patch
         self.tags['vol_pml'] = vol_pml
-        self.tags['vol_substrate'] = (3, 1)
+        self.tags['vol_substrate'] = vol_substrate
 
     def _set_mesh_settings(self):
         # general settings
@@ -135,13 +141,15 @@ class Mspa(object):
         sur_patch = self.tags['sur_patch']
         sur_pml = self.tags['sur_pml']
         vol_air = self.tags['vol_air']
+        vol_patch = self.tags['vol_patch']
         vol_pml = self.tags['vol_pml']
         vol_substrate = self.tags['vol_substrate']
 
         tags = gmsh.model.getBoundary([vol_air, vol_pml], False, False, True)
         gmsh.model.mesh.setSize(tags, mesh_size_environment)
 
-        tags = gmsh.model.getBoundary([vol_substrate], False, False, True)
+        tags = gmsh.model.getBoundary(
+            [vol_substrate, vol_patch], False, False, True)
         gmsh.model.mesh.setSize(tags, mesh_size_substrate)
 
         tags = gmsh.model.getBoundary(
@@ -152,19 +160,22 @@ class Mspa(object):
 
         sur_feed = self.tags['sur_feed']
         sur_gnd = self.tags['sur_gnd']
+        sur_gnd1 = self.tags['sur_gnd1']
         sur_patch = self.tags['sur_patch']
         sur_pml = self.tags['sur_pml']
         vol_air = self.tags['vol_air']
+        vol_patch = self.tags['vol_patch']
         vol_pml = self.tags['vol_pml']
         vol_substrate = self.tags['vol_substrate']
 
         tag = gmsh.model.addPhysicalGroup(2, [sur_feed[1]])
         gmsh.model.setPhysicalName(2, tag, 'SkinFeed')
 
-        tag = gmsh.model.addPhysicalGroup(2, [sur_gnd[1], sur_patch[1]])
+        tag = gmsh.model.addPhysicalGroup(
+            2, [sur_gnd[1], sur_gnd1[1], sur_patch[1]])
         gmsh.model.setPhysicalName(2, tag, 'SkinConductor')
 
-        tag = gmsh.model.addPhysicalGroup(3, [vol_substrate[1]])
+        tag = gmsh.model.addPhysicalGroup(3, [vol_substrate[1], vol_patch[1]])
         gmsh.model.setPhysicalName(3, tag, 'Substrate')
 
         tag = gmsh.model.addPhysicalGroup(3, [vol_air[1]])
