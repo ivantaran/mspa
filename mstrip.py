@@ -131,7 +131,9 @@ fvar['pml_xmin'] = -0.003
 fvar['pml_ymin'] = -0.003
 fvar['pml_zmin'] = -0.003
 dc = 0.0  # 0.035e-3
-fvar['pml_delta'] = 12.0 * (dc * 2.0 + model.dims['d'])
+dh = model.dims['d']
+fvar['dh'] = dh
+fvar['pml_delta'] = 12.0 * (dc * 2.0 + dh)
 
 
 f = pro.function
@@ -164,7 +166,7 @@ f.add('nu', 'nu0 / tens[]', region='Pml')
 # D5 = 1.40 * mm ;
 # V0 = 1 ; delta_gap = D5 ;
 # BC_Fct_e[] =  V0/delta_gap * Vector[1, 0, 0] ;
-f.add('BC_Fct_e', '1.0 / 1.4e-3 * ' + f.Vector(1.0, 0.0, 0.0))
+f.add('BC_Fct_e', '1.0 / dh * ' + f.Vector(0.0, 0.0, 1.0))
 # print_html(f.code)
 # exit(0)
 
@@ -221,9 +223,9 @@ q.add(Name='e', Type='Local', NameOfSpace='Hcurl_e')
 q.add(Name='h', Type='Local', NameOfSpace='Hcurl_h')
 
 e = f.add_equation()
-e.add('Galerkin', 'DtDof', 'nu[] * Dof{d e} , {d e}', In='Domain',
+e.add('Galerkin', '', 'nu[] * Dof{d e} , {d e}', In='Domain',
       Integration='I1', Jacobian='JVol')
-e.add('Galerkin', '', 'sigma[] * Dof{e}, {e}',
+e.add('Galerkin', 'DtDof', 'sigma[] * Dof{e}, {e}',
       In='DomainC', Integration='I1', Jacobian='JVol')
 e.add('Galerkin', 'DtDtDof', 'epsilon[] * Dof{e} , {e}',
       In='Domain', Integration='I1', Jacobian='JVol')
@@ -284,23 +286,23 @@ poi0.add(
     'exh', OnElementsOf='Region[{Domain, -Pml}]', File='./build/exh_pml.pos')
 
 
-# pro.make_file()
-# pro.write_file()
-# gmsh.open(pro.filename)
+pro.make_file()
+pro.write_file()
+gmsh.open(pro.filename)
 
-gmsh.merge('./build/e.pos')
-gmsh.merge('./build/h_pml.pos')
-minimal_box = True
-if minimal_box:
-    box = gmsh.model.occ.getBoundingBox(*model.tags['vol_substrate'])
-else:
-    airbox = gmsh.model.occ.getBoundingBox(*model.tags['air3d'])
-    box = [0.0] * 6
-    eps = 1.0e-9
-    for i in range(3):
-        box[i] = airbox[i] + eps
-        box[i + 3] = airbox[i + 3] - eps
-_setup_plugins(box, fvar['k0'])
+# gmsh.merge('./build/e.pos')
+# gmsh.merge('./build/h_pml.pos')
+# minimal_box = True
+# if minimal_box:
+#     box = gmsh.model.occ.getBoundingBox(*model.tags['vol_substrate'])
+# else:
+#     airbox = gmsh.model.occ.getBoundingBox(*model.tags['air3d'])
+#     box = [0.0] * 6
+#     eps = 1.0e-9
+#     for i in range(3):
+#         box[i] = airbox[i] + eps
+#         box[i + 3] = airbox[i + 3] - eps
+# _setup_plugins(box, fvar['k0'])
 
 
 gmsh.onelab.run()
