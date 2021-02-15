@@ -44,16 +44,16 @@ def _setup_plugins(box, wavenumber):
     p = gmsh.plugin
 
     name = 'CutBox'
-    p.setNumber(name, 'NumPointsU', 20)
-    p.setNumber(name, 'NumPointsV', 20)
+    p.setNumber(name, 'NumPointsU', 40)
+    p.setNumber(name, 'NumPointsV', 40)
     p.setNumber(name, 'NumPointsW', 20)
 
-    xmin = box[0]
-    ymin = box[1]
-    zmin = box[2]
-    xmax = box[3]
-    ymax = box[4]
-    zmax = box[5]
+    xmin = box[3]
+    ymin = box[4]
+    zmin = box[5]
+    xmax = box[0]
+    ymax = box[1]
+    zmax = box[2]
 
     p.setNumber(name, 'X0', xmin)
     p.setNumber(name, 'Y0', ymin)
@@ -124,12 +124,14 @@ fvar['eta0'] = 120.0 * pi  # eta0 = Sqrt(mu0/eps0)
 fvar['freq'] = freq
 fvar['k0'] = 2.0 * pi * freq / cvel
 
-fvar['pml_xmax'] = 0.055
-fvar['pml_ymax'] = 0.042
-fvar['pml_zmax'] = 0.010
-fvar['pml_xmin'] = -0.003
-fvar['pml_ymin'] = -0.003
-fvar['pml_zmin'] = -0.003
+box = gmsh.model.occ.getBoundingBox(*model.tags['vol_substrate'])
+
+fvar['pml_xmax'] = box[3]
+fvar['pml_ymax'] = box[4]
+fvar['pml_zmax'] = box[5]
+fvar['pml_xmin'] = box[0]
+fvar['pml_ymin'] = box[1]
+fvar['pml_zmin'] = box[2]
 dc = 0.0  # 0.035e-3
 dh = model.dims['d']
 fvar['dh'] = dh
@@ -162,13 +164,7 @@ f.add('tens', f.TensorDiag('cy[] * cz[] / cx[]',
                            'cx[] * cz[] / cy[]', 'cx[] * cy[] / cz[]'))
 f.add('epsilon', 'ep0 * tens[]', region='Pml')
 f.add('nu', 'nu0 / tens[]', region='Pml')
-
-# D5 = 1.40 * mm ;
-# V0 = 1 ; delta_gap = D5 ;
-# BC_Fct_e[] =  V0/delta_gap * Vector[1, 0, 0] ;
 f.add('BC_Fct_e', '1.0 / dh * ' + f.Vector(0.0, 0.0, 1.0))
-# print_html(f.code)
-# exit(0)
 
 constr = pro.constraint
 ef = constr.add('ElectricField')
@@ -286,23 +282,23 @@ poi0.add(
     'exh', OnElementsOf='Region[{Domain, -Pml}]', File='./build/exh_pml.pos')
 
 
-pro.make_file()
-pro.write_file()
-gmsh.open(pro.filename)
+# pro.make_file()
+# pro.write_file()
+# gmsh.open(pro.filename)
 
-# gmsh.merge('./build/e.pos')
-# gmsh.merge('./build/h_pml.pos')
-# minimal_box = True
-# if minimal_box:
-#     box = gmsh.model.occ.getBoundingBox(*model.tags['vol_substrate'])
-# else:
-#     airbox = gmsh.model.occ.getBoundingBox(*model.tags['air3d'])
-#     box = [0.0] * 6
-#     eps = 1.0e-9
-#     for i in range(3):
-#         box[i] = airbox[i] + eps
-#         box[i + 3] = airbox[i + 3] - eps
-# _setup_plugins(box, fvar['k0'])
+gmsh.merge('./build/e.pos')
+gmsh.merge('./build/h_pml.pos')
+minimal_box = True
+if minimal_box:
+    box = gmsh.model.occ.getBoundingBox(*model.tags['vol_substrate'])
+else:
+    airbox = gmsh.model.occ.getBoundingBox(*model.tags['air3d'])
+    box = [0.0] * 6
+    eps = 1.0e-9
+    for i in range(3):
+        box[i] = airbox[i] + eps
+        box[i + 3] = airbox[i + 3] - eps
+_setup_plugins(box, fvar['k0'])
 
 
 gmsh.onelab.run()
