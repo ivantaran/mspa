@@ -111,7 +111,7 @@ pro.group.define('DomainS')  # TODO remove
 pro.group.define('SurS')  # TODO remove
 pro.group.ElementsOf('TrGr', 'Domain', OnOneSideOf='SkinFeed')
 
-freq = 1.6e6  # Hz~1.0/s
+freq = 1.575e9  # Hz~1.0/s
 cvel = 299792458.0  # m/s
 
 fvar = {}
@@ -288,16 +288,18 @@ poi0.add(
 
 gmsh.merge('./build/e.pos')
 gmsh.merge('./build/h_pml.pos')
-minimal_box = True
+minimal_box = False
 if minimal_box:
-    box = gmsh.model.occ.getBoundingBox(*model.tags['vol_substrate'])
+    box = gmsh.model.occ.getBoundingBox(*model.tags['sur_patch'])
 else:
-    airbox = gmsh.model.occ.getBoundingBox(*model.tags['air3d'])
+    airbox = gmsh.model.occ.getBoundingBox(*model.tags['sur_patch'])
     box = [0.0] * 6
-    eps = 1.0e-9
+    eps = 0.0
     for i in range(3):
-        box[i] = airbox[i] + eps
-        box[i + 3] = airbox[i + 3] - eps
+        box[i] = airbox[i] - eps
+        box[i + 3] = airbox[i + 3] + eps
+    box[2] += dh
+    box[5] -= dh
 _setup_plugins(box, fvar['k0'])
 
 
