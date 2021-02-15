@@ -294,12 +294,12 @@ if minimal_box:
 else:
     airbox = gmsh.model.occ.getBoundingBox(*model.tags['sur_patch'])
     box = [0.0] * 6
-    eps = 0.0
+    eps = 1.0e-5
     for i in range(3):
         box[i] = airbox[i] - eps
         box[i + 3] = airbox[i + 3] + eps
-    box[2] += dh
-    box[5] -= dh
+    # box[2] += dh * 10.0
+    # box[5] -= dh * 10.0
 _setup_plugins(box, fvar['k0'])
 
 
