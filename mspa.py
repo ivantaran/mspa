@@ -111,6 +111,7 @@ class Mspa(object):
         vol_substrate = tags[0]
 
         occ.synchronize()
+        occ.removeAllDuplicates()
 
         self.tags['sur_feed'] = (2, 18)
         self.tags['sur_gnd'] = (2, 24)

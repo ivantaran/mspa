@@ -124,7 +124,7 @@ fvar['eta0'] = 120.0 * pi  # eta0 = Sqrt(mu0/eps0)
 fvar['freq'] = freq
 fvar['k0'] = 2.0 * pi * freq / cvel
 
-box = gmsh.model.occ.getBoundingBox(*model.tags['vol_substrate'])
+box = gmsh.model.occ.getBoundingBox(*model.tags['vol_patch'])
 
 fvar['pml_xmax'] = box[3]
 fvar['pml_ymax'] = box[4]
@@ -161,7 +161,8 @@ f.add('cx', f.Complex(1.0, '-DampingProfileX[] / k0'))
 f.add('cy', f.Complex(1.0, '-DampingProfileY[] / k0'))
 f.add('cz', f.Complex(1.0, '-DampingProfileZ[] / k0'))
 f.add('tens', f.TensorDiag('cy[] * cz[] / cx[]',
-                           'cx[] * cz[] / cy[]', 'cx[] * cy[] / cz[]'))
+                           'cx[] * cz[] / cy[]',
+                           'cx[] * cy[] / cz[]'))
 f.add('epsilon', 'ep0 * tens[]', region='Pml')
 f.add('nu', 'nu0 / tens[]', region='Pml')
 f.add('BC_Fct_e', '1.0 / dh * ' + f.Vector(0.0, 0.0, 1.0))
@@ -235,7 +236,7 @@ e.add('Galerkin', 'DtDof', '-nxh[] , {e}',
 # // store magnetic field for Admitance computation (Yin)
 e.add('Galerkin', '', 'Dof{h} , {h}', In='TrGr',
       Integration='I1', Jacobian='JVol')
-e.add('Galerkin', '', '-I[]*nu[]*Dof{d e}/(2*Pi*freq), {h}',
+e.add('Galerkin', '', '-I[] * nu[] * Dof{d e} / (2.0 * Pi * freq), {h}',
       In='TrGr', Integration='I1', Jacobian='JVol')
 
 resolution = pro.resolution
@@ -290,11 +291,12 @@ gmsh.merge('./build/e.pos')
 gmsh.merge('./build/h_pml.pos')
 minimal_box = False
 if minimal_box:
-    box = gmsh.model.occ.getBoundingBox(*model.tags['sur_patch'])
+    box = gmsh.model.occ.getBoundingBox(
+        *model.tags['vol_substrate'])  # sur_patch
 else:
-    airbox = gmsh.model.occ.getBoundingBox(*model.tags['sur_patch'])
+    airbox = gmsh.model.occ.getBoundingBox(*model.tags['vol_substrate'])
     box = [0.0] * 6
-    eps = 1.0e-5
+    eps = 5.0e-3
     for i in range(3):
         box[i] = airbox[i] - eps
         box[i + 3] = airbox[i + 3] + eps
