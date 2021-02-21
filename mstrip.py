@@ -1,12 +1,12 @@
-import os
-import sys
+
 from pygetdp import Group, Function, Problem
 from pygetdp.helpers import build_example_png, print_html
-from math import pi
+from scipy.constants import mu_0, epsilon_0, pi, speed_of_light
 import gmsh
 import mspa
 import numpy as np
-
+import os
+import sys
 
 GDICT1 = {
     'Point': 1,
@@ -44,9 +44,9 @@ def _setup_plugins(box, wavenumber):
     p = gmsh.plugin
 
     name = 'CutBox'
-    p.setNumber(name, 'NumPointsU', 40)
-    p.setNumber(name, 'NumPointsV', 40)
-    p.setNumber(name, 'NumPointsW', 20)
+    p.setNumber(name, 'NumPointsU', 100)
+    p.setNumber(name, 'NumPointsV', 100)
+    p.setNumber(name, 'NumPointsW', 5)
 
     xmin = box[3]
     ymin = box[4]
@@ -74,16 +74,16 @@ def _setup_plugins(box, wavenumber):
     p.setNumber(name, 'ConnectPoints', 1)
     p.setNumber(name, 'Boundary', 1)
 
-    p.setNumber(name, 'View', 0)  # TODO value from index of post operation
+    p.setNumber(name, 'View', 0)
     p.run(name)
-    p.setNumber(name, 'View', 1)  # TODO value from index of post operation
+    p.setNumber(name, 'View', 1)
     p.run(name)
 
     name = 'NearToFarField'
     p.setNumber(name, 'Wavenumber', wavenumber)
     p.setNumber(name, 'RFar', 1)
-    p.setNumber(name, 'NumPointsPhi', 50)
-    p.setNumber(name, 'NumPointsTheta', 25)
+    p.setNumber(name, 'NumPointsPhi', 30)  # 50
+    p.setNumber(name, 'NumPointsTheta', 15)  # 25
     p.setNumber(name, 'EView', 2)
     p.setNumber(name, 'HView', 3)
     p.setNumber(name, 'Normalize', 1)
@@ -92,8 +92,6 @@ def _setup_plugins(box, wavenumber):
 
 
 model = mspa.Mspa(MODEL_NAME)
-gmsh.model.mesh.generate(3)
-gmsh.write(MODEL_NAME + '.msh')
 
 pro = Problem()
 pro.filename = MODEL_NAME + '.pro'
@@ -111,20 +109,17 @@ pro.group.define('DomainS')  # TODO remove
 pro.group.define('SurS')  # TODO remove
 pro.group.ElementsOf('TrGr', 'Domain', OnOneSideOf='SkinFeed')
 
-freq = 1.575e9  # Hz~1.0/s
-cvel = 299792458.0  # m/s
+freq = 1.480e9  # 1.575e9
 
 fvar = {}
-fvar['mu0'] = 4.0e-7 * pi
+fvar['mu0'] = mu_0
 fvar['nu0'] = 1.0 / fvar['mu0']
-fvar['ep0'] = 8.854187817e-12
+fvar['ep0'] = epsilon_0
 fvar['epr'] = 3.38  # Dielectric constant for FR4 is ~4.5
-fvar['zl'] = 50.0  # Ohms load resistance
-fvar['eta0'] = 120.0 * pi  # eta0 = Sqrt(mu0/eps0)
 fvar['freq'] = freq
-fvar['k0'] = 2.0 * pi * freq / cvel
+fvar['k0'] = 2.0 * pi * freq / speed_of_light
 
-box = gmsh.model.occ.getBoundingBox(*model.tags['vol_patch'])
+box = gmsh.model.occ.getBoundingBox(*model.tags['vol_air'])
 
 fvar['pml_xmax'] = box[3]
 fvar['pml_ymax'] = box[4]
@@ -135,7 +130,7 @@ fvar['pml_zmin'] = box[2]
 dc = 0.0  # 0.035e-3
 dh = model.dims['d']
 fvar['dh'] = dh
-fvar['pml_delta'] = 12.0 * (dc * 2.0 + dh)
+fvar['pml_delta'] = 0.05  # 12.0 * (dc * 2.0 + dh)
 
 
 f = pro.function
@@ -148,7 +143,7 @@ f.add('epsilon', 'ep0', region=['Air', 'SkinFeed', 'SigmaInf'])
 f.add('epsilon', 'epr * ep0', region='Substrate')
 f.add('nu', 'nu0', region=['Air', 'Substrate', 'SkinFeed', 'SigmaInf'])
 
-f.add('sigma', '6.0e7')  # Copper
+f.add('sigma', '6.0e7')  # Copper 6.0e7
 f.define('js0')  # TODO remove
 f.define('ks0')  # TODO remove
 f.define('nxh')  # TODO remove
@@ -165,7 +160,7 @@ f.add('tens', f.TensorDiag('cy[] * cz[] / cx[]',
                            'cx[] * cy[] / cz[]'))
 f.add('epsilon', 'ep0 * tens[]', region='Pml')
 f.add('nu', 'nu0 / tens[]', region='Pml')
-f.add('BC_Fct_e', '1.0 / dh * ' + f.Vector(0.0, 0.0, 1.0))
+f.add('BC_Fct_e', f.Vector(0.0, 0.0, 1.0 / dh))
 
 constr = pro.constraint
 ef = constr.add('ElectricField')
@@ -269,8 +264,9 @@ quantity.add(Name='e', Type='Local',
              Value='{e}', In='DomainTot', Jacobian='JVol')
 quantity.add(Name='h_from_e', Type='Local',
              Value='I[] * nu[] * {d e} / (2.0 * Pi * freq)', In='Domain', Jacobian='JVol')
-quantity.add(Name='exh', Type='Local',
-             Value='CrossProduct[{e}, Conj[I[] * nu[] * {d e} / (2.0 * Pi * freq)]]', In='Domain', Jacobian='JVol')
+# quantity.add(Name='exh', Type='Local',
+#              Value='CrossProduct[{e}, Conj[I[] * nu[] * {d e} / (2.0 * Pi * freq)]]',
+#              In='Domain', Jacobian='JVol')
 
 
 po = pro.postoperation
@@ -279,33 +275,39 @@ poi0 = poi.add()
 poi0.add('e', OnElementsOf='Region[{Domain, -Pml}]', File='./build/e.pos')
 poi0.add(
     'h_from_e', OnElementsOf='Region[{Domain, -Pml}]', File='./build/h_pml.pos')
-poi0.add(
-    'exh', OnElementsOf='Region[{Domain, -Pml}]', File='./build/exh_pml.pos')
+# poi0.add('exh', OnElementsOf='Region[{Domain, -Pml}]',
+#          File='./build/exh_pml.pos')
 
 
-# pro.make_file()
-# pro.write_file()
-# gmsh.open(pro.filename)
+gmsh.model.mesh.generate(3)
+gmsh.write(MODEL_NAME + '.msh')
+pro.make_file()
+pro.write_file()
+gmsh.open(pro.filename)
 
-gmsh.merge('./build/e.pos')
-gmsh.merge('./build/h_pml.pos')
-minimal_box = False
+# gmsh.model.mesh.generate(1)
+# gmsh.merge('./build/e.pos')
+# gmsh.merge('./build/h_pml.pos')
+
+gmsh.onelab.run()
+gmsh.model.setCurrent(MODEL_NAME)
+
+minimal_box = True
 if minimal_box:
     box = gmsh.model.occ.getBoundingBox(
-        *model.tags['vol_substrate'])  # sur_patch
+        *model.tags['vol_substrate'])  # sur_patch, vol_substrate
 else:
     airbox = gmsh.model.occ.getBoundingBox(*model.tags['vol_substrate'])
     box = [0.0] * 6
-    eps = 5.0e-3
+    eps = 1.0e-5
     for i in range(3):
         box[i] = airbox[i] - eps
         box[i + 3] = airbox[i + 3] + eps
-    # box[2] += dh * 10.0
-    # box[5] -= dh * 10.0
+    # box[2] += 1.0e-3
+    # box[5] += 1.0e-3
 _setup_plugins(box, fvar['k0'])
 
-
-gmsh.onelab.run()
+# gmsh.onelab.run()
 if '-nopopup' not in sys.argv:
     gmsh.fltk.run()
 

@@ -124,15 +124,30 @@ class Mspa(object):
         self.tags['vol_substrate'] = vol_substrate
 
     def _set_mesh_settings(self):
-        # general settings
-        gmsh.option.setNumber('Mesh.Algorithm3D', 4)  # (1=Delaunay, 4=Frontal)
+        gmsh.option.setNumber('General.Antialiasing', 1)
+        gmsh.option.setNumber('General.AlphaBlending', 1)
+        gmsh.option.setNumber('View.FakeTransparency', 1)
+
+        # 1: MeshAdapt, 2: Automatic, 3: Initial mesh only,
+        # 5: Delaunay, 6: Frontal-Delaunay, 7: BAMG,
+        # 8: Frontal-Delaunay for Quads, 9: Packing of Parallelograms
+        gmsh.option.setNumber('Mesh.Algorithm', 2)
+        # 1: Delaunay, 3: Initial mesh only,
+        # 4: Frontal, 7: MMG3D, 9: R-tree, 10: HXT
+        gmsh.option.setNumber('Mesh.Algorithm3D', 4)
         gmsh.option.setNumber('Mesh.Optimize', 1)
         gmsh.option.setNumber('Mesh.Smoothing', 5)
+        gmsh.option.setNumber('Mesh.SmoothNormals', 1)
+        # 0: By element type
+        # 1: By elementary entity
+        # 2: By physical group
+        # 3: By mesh partition
+        gmsh.option.setNumber('Mesh.ColorCarousel', 2)
 
         # mesh sizes by elements
         mm = 1.0e-3
-        mesh_size_condutor = 1.5 * mm
-        mesh_size_substrate = 1.5 * mm
+        mesh_size_condutor = 2.5 * mm
+        mesh_size_substrate = 2.5 * mm
         mesh_size_environment = 10.0 * mm
         sur_feed = self.tags['sur_feed']
         sur_gnd = self.tags['sur_gnd']
@@ -181,6 +196,7 @@ class Mspa(object):
 
         tag = gmsh.model.addPhysicalGroup(3, [vol_pml[1]])
         gmsh.model.setPhysicalName(3, tag, 'Pml')
+        gmsh.model.setColor([vol_pml], 255, 0, 0, 16, True)
 
         tag = gmsh.model.addPhysicalGroup(2, [sur_pml[1]])
         gmsh.model.setPhysicalName(2, tag, 'SigmaInf')
