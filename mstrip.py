@@ -44,9 +44,9 @@ def _setup_plugins(box, wavenumber):
     p = gmsh.plugin
 
     name = 'CutBox'
-    p.setNumber(name, 'NumPointsU', 100)
-    p.setNumber(name, 'NumPointsV', 100)
-    p.setNumber(name, 'NumPointsW', 5)
+    p.setNumber(name, 'NumPointsU', 40)
+    p.setNumber(name, 'NumPointsV', 40)
+    p.setNumber(name, 'NumPointsW', 2)
 
     xmin = box[3]
     ymin = box[4]
@@ -86,8 +86,16 @@ def _setup_plugins(box, wavenumber):
     p.setNumber(name, 'NumPointsTheta', 15)  # 25
     p.setNumber(name, 'EView', 2)
     p.setNumber(name, 'HView', 3)
-    p.setNumber(name, 'Normalize', 1)
+    p.setNumber(name, 'Normalize', 0)
     p.setNumber(name, 'dB', 1)
+    p.run(name)
+
+    name = 'MathEval'
+    p.setString(name, 'Expression0',
+                '10.0*Log10(Abs(v0)^2+Abs(v1)^2+Abs(v2)^2)')
+    p.setNumber(name, 'View', 2)
+    p.run(name)
+    p.setNumber(name, 'View', 3)
     p.run(name)
 
 
@@ -109,7 +117,11 @@ pro.group.define('DomainS')  # TODO remove
 pro.group.define('SurS')  # TODO remove
 pro.group.ElementsOf('TrGr', 'Domain', OnOneSideOf='SkinFeed')
 
-freq = 1.480e9  # 1.575e9
+'''
+1.575e9 - reference value
+1.480e9
+'''
+freq = 1.575e9
 
 fvar = {}
 fvar['mu0'] = mu_0
@@ -139,8 +151,8 @@ for name, value in fvar.items():
     f.constant(name, value)
 
 f.add('I', f.Complex(0, 1))
-f.add('epsilon', 'ep0', region=['Air', 'SkinFeed', 'SigmaInf'])
-f.add('epsilon', 'epr * ep0', region='Substrate')
+f.add('epsilon', 'ep0', region=['Air', 'SigmaInf'])
+f.add('epsilon', 'epr * ep0', region=['SkinFeed', 'Substrate'])
 f.add('nu', 'nu0', region=['Air', 'Substrate', 'SkinFeed', 'SigmaInf'])
 
 f.add('sigma', '6.0e7')  # Copper 6.0e7
@@ -204,9 +216,11 @@ f = formulation.add('Microwave_e_BC', Type='FemEquation')
 q = f.add_quantity()
 q.add(Name='e', Type='Local', NameOfSpace='Hcurl_e')
 e = f.add_equation()
-e.add('Galerkin', '', 'Dof{e} , {e}', In='SurBC',
-      Integration='I2', Jacobian='JSur')
-e.add('Galerkin', '', '-BC_Fct_e[] , {e}',
+e.add('Galerkin', '',
+      'Dof{e} , {e}',
+      In='SurBC', Integration='I2', Jacobian='JSur')
+e.add('Galerkin', '',
+      '-BC_Fct_e[] , {e}',
       In='SurBC', Integration='I2', Jacobian='JSur')
 
 f = formulation.add('Microwave_e', Type='FemEquation')
@@ -215,23 +229,20 @@ q.add(Name='e', Type='Local', NameOfSpace='Hcurl_e')
 q.add(Name='h', Type='Local', NameOfSpace='Hcurl_h')
 
 e = f.add_equation()
-e.add('Galerkin', '', 'nu[] * Dof{d e} , {d e}', In='Domain',
-      Integration='I1', Jacobian='JVol')
-e.add('Galerkin', 'DtDof', 'sigma[] * Dof{e}, {e}',
-      In='DomainC', Integration='I1', Jacobian='JVol')
-e.add('Galerkin', 'DtDtDof', 'epsilon[] * Dof{e} , {e}',
+e.add('Galerkin', '',
+      'nu[] * Dof{d e} , {d e}',
       In='Domain', Integration='I1', Jacobian='JVol')
-e.add('Galerkin', 'DtDof', 'js0[], {e}',
-      In='DomainS', Integration='I1', Jacobian='JVol')
-e.add('Galerkin', 'DtDof', '-ks0[] , {d e}',
-      In='DomainS', Integration='I1', Jacobian='JVol')
-e.add('Galerkin', 'DtDof', '-nxh[] , {e}',
-      In='SurS', Integration='I1', Jacobian='JSur')
-
-# // store magnetic field for Admitance computation (Yin)
-e.add('Galerkin', '', 'Dof{h} , {h}', In='TrGr',
-      Integration='I1', Jacobian='JVol')
-e.add('Galerkin', '', '-I[] * nu[] * Dof{d e} / (2.0 * Pi * freq), {h}',
+e.add('Galerkin', 'DtDof',
+      'sigma[] * Dof{e}, {e}',
+      In='DomainC', Integration='I1', Jacobian='JVol')
+e.add('Galerkin', 'DtDtDof',
+      'epsilon[] * Dof{e} , {e}',
+      In='Domain', Integration='I1', Jacobian='JVol')
+e.add('Galerkin', '',
+      'Dof{h} , {h}',
+      In='TrGr', Integration='I1', Jacobian='JVol')
+e.add('Galerkin', '',
+      '-I[] * nu[] * Dof{d e} / (2.0 * Pi * freq), {h}',
       In='TrGr', Integration='I1', Jacobian='JVol')
 
 resolution = pro.resolution
@@ -255,59 +266,62 @@ operation.CreateDirectory('build')
 operation.Generate('A')
 operation.Solve('A')
 operation.SaveSolution('A')
-# operation.PostOperation('Microwave_e')
 
 pp = pro.postprocessing
 ppi = pp.add('Microwave_e', 'Microwave_e')
 quantity = ppi.add()
 quantity.add(Name='e', Type='Local',
-             Value='{e}', In='DomainTot', Jacobian='JVol')
-quantity.add(Name='h_from_e', Type='Local',
-             Value='I[] * nu[] * {d e} / (2.0 * Pi * freq)', In='Domain', Jacobian='JVol')
-# quantity.add(Name='exh', Type='Local',
-#              Value='CrossProduct[{e}, Conj[I[] * nu[] * {d e} / (2.0 * Pi * freq)]]',
-#              In='Domain', Jacobian='JVol')
-
+             Value='{e}',
+             In='DomainTot', Jacobian='JVol')
+quantity.add(Name='h', Type='Local',
+             Value='I[] * nu[] * {d e} / (2.0 * Pi * freq)',
+             In='Domain', Jacobian='JVol')
 
 po = pro.postoperation
 poi = po.add('Microwave_e', 'Microwave_e')
 poi0 = poi.add()
 poi0.add('e', OnElementsOf='Region[{Domain, -Pml}]', File='./build/e.pos')
-poi0.add(
-    'h_from_e', OnElementsOf='Region[{Domain, -Pml}]', File='./build/h_pml.pos')
-# poi0.add('exh', OnElementsOf='Region[{Domain, -Pml}]',
-#          File='./build/exh_pml.pos')
+poi0.add('h', OnElementsOf='Region[{Domain, -Pml}]', File='./build/h.pos')
 
+#
+# gmsh.merge('./build/e.pos')
+# gmsh.merge('./build/h.pos')
 
 gmsh.model.mesh.generate(3)
+# gmsh.model.mesh.optimize('Netgen')
 gmsh.write(MODEL_NAME + '.msh')
 pro.make_file()
 pro.write_file()
 gmsh.open(pro.filename)
 
-# gmsh.model.mesh.generate(1)
-# gmsh.merge('./build/e.pos')
-# gmsh.merge('./build/h_pml.pos')
-
 gmsh.onelab.run()
 gmsh.model.setCurrent(MODEL_NAME)
 
-minimal_box = True
+minimal_box = False
 if minimal_box:
     box = gmsh.model.occ.getBoundingBox(
-        *model.tags['vol_substrate'])  # sur_patch, vol_substrate
+        *model.tags['vol_substrate'])  # sur_patch, vol_substrate, vol_patch
 else:
-    airbox = gmsh.model.occ.getBoundingBox(*model.tags['vol_substrate'])
+    airbox = gmsh.model.occ.getBoundingBox(*model.tags['vol_patch'])
     box = [0.0] * 6
-    eps = 1.0e-5
-    for i in range(3):
-        box[i] = airbox[i] - eps
-        box[i + 3] = airbox[i + 3] + eps
+    eps = 1.0e-3
+    for i in range(6):
+        box[i] = airbox[i]
+    box[2] = -eps * 10.0
+    box[5] = +eps * 10.0
+    # box[0] -= eps
+    # box[1] -= eps
+    # box[2] -= eps * 10.0
+    # box[3] += eps
+    # box[4] += eps
+    # box[5] += eps * 10.0
+    # for i in range(3):
+    #     box[i] = airbox[i] - eps
+    #     box[i + 3] = airbox[i + 3] + eps
     # box[2] += 1.0e-3
     # box[5] += 1.0e-3
 _setup_plugins(box, fvar['k0'])
 
-# gmsh.onelab.run()
 if '-nopopup' not in sys.argv:
     gmsh.fltk.run()
 
