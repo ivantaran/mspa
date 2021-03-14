@@ -146,8 +146,8 @@ class Mspa(object):
 
         # mesh sizes by elements
         mm = 1.0e-3
-        mesh_size_condutor = 1.5 * mm  # 2.5
-        mesh_size_substrate = 1.5 * mm
+        mesh_size_condutor = 2.5 * mm  # 2.5
+        mesh_size_substrate = 2.5 * mm
         mesh_size_environment = 10.0 * mm
         sur_feed = self.tags['sur_feed']
         sur_gnd = self.tags['sur_gnd']
