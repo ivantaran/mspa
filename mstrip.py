@@ -297,8 +297,8 @@ poi0.add('e', OnElementsOf='Region[{Domain, -Pml}]', File='./build/e.pos')
 poi0.add('h', OnElementsOf='Region[{Domain, -Pml}]', File='./build/h.pos')
 poi0.add('y[SkinFeed]', OnGlobal='', Format='FrequencyTable',
          StoreInVariable='$y', File='./build/y.txt')
-# poi0.add('s11', OnRegion='SkinFeed', Format='FrequencyTable',
-#          StoreInVariable='$s11', File='./build/s11.txt')
+poi0.add('s11', OnRegion='SkinFeed', Format='FrequencyTable',
+         StoreInVariable='$s11', File='./build/s11.txt')
 # poi0.add('s11re', OnRegion='SkinFeed', Format='Table',
 #          SendToServer='"s11re"', File='./build/s11re.txt')
 
