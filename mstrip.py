@@ -140,9 +140,10 @@ fvar['pml_xmin'] = box[0]
 fvar['pml_ymin'] = box[1]
 fvar['pml_zmin'] = box[2]
 dc = 0.0  # 0.035e-3
-dh = model.dims['d']
-fvar['dh'] = dh
+gap = model.dims['d']
+fvar['gap'] = gap
 fvar['pml_delta'] = 0.05  # 12.0 * (dc * 2.0 + dh)
+fvar['zl'] = 50.0  # Ohm load resistance
 
 
 f = pro.function
@@ -172,7 +173,8 @@ f.add('tens', f.TensorDiag('cy[] * cz[] / cx[]',
                            'cx[] * cy[] / cz[]'))
 f.add('epsilon', 'ep0 * tens[]', region='Pml')
 f.add('nu', 'nu0 / tens[]', region='Pml')
-f.add('BC_Fct_e', f.Vector(0.0, 0.0, 1.0 / dh))
+f.add('BC_Fct_e', f.Vector(0.0, 0.0, 1.0 / gap))
+f.add('dr', f.Vector(1.0, 0.0, 0.0))
 
 constr = pro.constraint
 ef = constr.add('ElectricField')
@@ -277,11 +279,28 @@ quantity.add(Name='h', Type='Local',
              Value='I[] * nu[] * {d e} / (2.0 * Pi * freq)',
              In='Domain', Jacobian='JVol')
 
+# admittance
+quantity.add(Name='y', Type='Integral',
+             Value='1.0 / gap * {h} * dr[]', In='SkinFeed',
+             Jacobian='JSur', Integration='I2')
+quantity.add(Name='s11', Type='Term',
+             Value='(1.0 - zl * $y) / (1.0 + zl * $y)', In='SkinFeed')
+quantity.add(Name='s11re', Type='Term',
+             Value='Re[$s11]', In='SkinFeed')
+# print(quantity.code)
+# exit(0)
+
 po = pro.postoperation
 poi = po.add('Microwave_e', 'Microwave_e')
 poi0 = poi.add()
 poi0.add('e', OnElementsOf='Region[{Domain, -Pml}]', File='./build/e.pos')
 poi0.add('h', OnElementsOf='Region[{Domain, -Pml}]', File='./build/h.pos')
+poi0.add('y[SkinFeed]', OnGlobal='', Format='FrequencyTable',
+         StoreInVariable='$y', File='./build/y.txt')
+# poi0.add('s11', OnRegion='SkinFeed', Format='FrequencyTable',
+#          StoreInVariable='$s11', File='./build/s11.txt')
+# poi0.add('s11re', OnRegion='SkinFeed', Format='Table',
+#          SendToServer='"s11re"', File='./build/s11re.txt')
 
 #
 # gmsh.merge('./build/e.pos')
