@@ -121,7 +121,7 @@ pro.group.ElementsOf('TrGr', 'Domain', OnOneSideOf='SkinFeed')
 1.575e9 - reference value
 1.480e9
 '''
-freq = 1.575e9
+freq = 1.525e9
 
 fvar = {}
 fvar['mu0'] = mu_0
@@ -284,11 +284,9 @@ quantity.add(Name='y', Type='Integral',
              Value='1.0 / gap * {h} * dr[]', In='SkinFeed',
              Jacobian='JSur', Integration='I2')
 quantity.add(Name='s11', Type='Term',
-             Value='(1.0 - zl * $y) / (1.0 + zl * $y)', In='SkinFeed')
-quantity.add(Name='s11re', Type='Term',
-             Value='Re[$s11]', In='SkinFeed')
-# print(quantity.code)
-# exit(0)
+             Value='20.0 * Log10[Abs[(1.0 - zl * $y) / (1.0 + zl * $y)]]', In='SkinFeed')
+# quantity.add(Name='s11re', Type='Term',
+#              Value='Re[$s11]', In='SkinFeed')
 
 po = pro.postoperation
 poi = po.add('Microwave_e', 'Microwave_e')
@@ -298,7 +296,7 @@ poi0.add('h', OnElementsOf='Region[{Domain, -Pml}]', File='./build/h.pos')
 poi0.add('y[SkinFeed]', OnGlobal='', Format='FrequencyTable',
          StoreInVariable='$y', File='./build/y.txt')
 poi0.add('s11', OnRegion='SkinFeed', Format='FrequencyTable',
-         StoreInVariable='$s11', File='./build/s11.txt')
+         StoreInVariable='$s11', SendToServer='"s11"', File='./build/s11.txt')
 # poi0.add('s11re', OnRegion='SkinFeed', Format='Table',
 #          SendToServer='"s11re"', File='./build/s11re.txt')
 
@@ -339,7 +337,7 @@ else:
     #     box[i + 3] = airbox[i + 3] + eps
     # box[2] += 1.0e-3
     # box[5] += 1.0e-3
-_setup_plugins(box, fvar['k0'])
+# _setup_plugins(box, fvar['k0'])
 
 if '-nopopup' not in sys.argv:
     gmsh.fltk.run()
