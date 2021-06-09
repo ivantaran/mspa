@@ -262,7 +262,7 @@ ppi = pp.add('Microwave_e', 'Microwave_e')
 quantity = ppi.add()
 quantity.add(Name='e', Type='Local',
              Value='{e}', In='DomainTot', Jacobian='JVol')
-quantity.add(Name='h_from_e', Type='Local',
+quantity.add(Name='h', Type='Local',
              Value='I[] * nu[] * {d e} / (2.0 * Pi * freq)', In='Domain', Jacobian='JVol')
 # quantity.add(Name='exh', Type='Local',
 #              Value='CrossProduct[{e}, Conj[I[] * nu[] * {d e} / (2.0 * Pi * freq)]]',
@@ -273,8 +273,7 @@ po = pro.postoperation
 poi = po.add('Microwave_e', 'Microwave_e')
 poi0 = poi.add()
 poi0.add('e', OnElementsOf='Region[{Domain, -Pml}]', File='./build/e.pos')
-poi0.add(
-    'h_from_e', OnElementsOf='Region[{Domain, -Pml}]', File='./build/h_pml.pos')
+poi0.add('h', OnElementsOf='Region[{Domain, -Pml}]', File='./build/h.pos')
 # poi0.add('exh', OnElementsOf='Region[{Domain, -Pml}]',
 #          File='./build/exh_pml.pos')
 
