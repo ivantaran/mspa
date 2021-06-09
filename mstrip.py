@@ -279,8 +279,8 @@ poi0.add(
 #          File='./build/exh_pml.pos')
 
 
-# gmsh.model.mesh.generate(3)
-# gmsh.write(MODEL_NAME + '.msh')
+gmsh.model.mesh.generate(3)
+gmsh.write(MODEL_NAME + '.msh')
 pro.make_file()
 pro.write_file()
 gmsh.open(pro.filename)
