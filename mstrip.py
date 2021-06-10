@@ -120,6 +120,7 @@ pro.group.ElementsOf('TrGr', 'Domain', OnOneSideOf='SkinFeed')
 '''
 1.575e9 - reference value
 1.480e9
+1.525e9 - optimal s11
 '''
 freq = 1.525e9
 
@@ -142,7 +143,7 @@ fvar['pml_zmin'] = box[2]
 dc = 0.0  # 0.035e-3
 gap = model.dims['d']
 fvar['gap'] = gap
-fvar['pml_delta'] = 0.05  # 12.0 * (dc * 2.0 + dh)
+fvar['pml_delta'] = 0.02 #0.05  # 12.0 * (dc * 2.0 + dh)
 fvar['zl'] = 50.0  # Ohm load resistance
 
 
@@ -314,7 +315,7 @@ gmsh.open(pro.filename)
 gmsh.onelab.run()
 gmsh.model.setCurrent(MODEL_NAME)
 
-minimal_box = False
+minimal_box = True
 if minimal_box:
     box = gmsh.model.occ.getBoundingBox(
         *model.tags['vol_substrate'])  # sur_patch, vol_substrate, vol_patch
@@ -337,7 +338,7 @@ else:
     #     box[i + 3] = airbox[i + 3] + eps
     # box[2] += 1.0e-3
     # box[5] += 1.0e-3
-# _setup_plugins(box, fvar['k0'])
+_setup_plugins(box, fvar['k0'])
 
 if '-nopopup' not in sys.argv:
     gmsh.fltk.run()
