@@ -122,7 +122,7 @@ pro.group.ElementsOf('TrGr', 'Domain', OnOneSideOf='SkinFeed')
 1.480e9
 1.525e9 - optimal s11
 '''
-freq = 1.525e9
+freq = 1.534e9
 
 fvar = {}
 fvar['mu0'] = mu_0
@@ -143,7 +143,7 @@ fvar['pml_zmin'] = box[2]
 dc = 0.0  # 0.035e-3
 gap = model.dims['d']
 fvar['gap'] = gap
-fvar['pml_delta'] = 0.02 #0.05  # 12.0 * (dc * 2.0 + dh)
+fvar['pml_delta'] = 0.15  # 0.05  # 12.0 * (dc * 2.0 + dh)
 fvar['zl'] = 50.0  # Ohm load resistance
 
 
@@ -292,8 +292,8 @@ quantity.add(Name='s11', Type='Term',
 po = pro.postoperation
 poi = po.add('Microwave_e', 'Microwave_e')
 poi0 = poi.add()
-poi0.add('e', OnElementsOf='Region[{Domain, -Pml}]', File='./build/e.pos')
-poi0.add('h', OnElementsOf='Region[{Domain, -Pml}]', File='./build/h.pos')
+poi0.add('e', OnElementsOf='Region[{Domain}]', File='./build/e.pos')  # , -Pml
+poi0.add('h', OnElementsOf='Region[{Domain}]', File='./build/h.pos')  # , -Pml
 poi0.add('y[SkinFeed]', OnGlobal='', Format='FrequencyTable',
          StoreInVariable='$y', File='./build/y.txt')
 poi0.add('s11', OnRegion='SkinFeed', Format='FrequencyTable',

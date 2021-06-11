@@ -91,7 +91,7 @@ class Mspa(object):
 
         tag = occ.addSphere(0.0, 0.0, 0.0, l_sub)
         vol_air = (3, tag)
-        tag = occ.addSphere(0.0, 0.0, 0.0, l_sub * 1.2)
+        tag = occ.addSphere(0.0, 0.0, 0.0, l_sub * 2.0)
         vol_pml = (3, tag)
 
         occ.synchronize()
