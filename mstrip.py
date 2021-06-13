@@ -40,6 +40,28 @@ def add_integration(integration, name, group_dict, itype='Gauss'):
         ici.add(GeoElement=element, NumberOfPoints=value)
 
 
+def _setup_planes():
+    p = gmsh.plugin
+    name = 'CutPlane'
+    p.setNumber(name, 'A', 1.0)
+    p.setNumber(name, 'B', 0.0)
+    p.setNumber(name, 'C', 0.0)
+    p.setNumber(name, 'D', 0.0)
+    p.setNumber(name, 'View', 0)
+    p.run(name)
+    name = 'ModulusPhase'
+    p.setNumber(name, 'RealPart', 0)
+    p.setNumber(name, 'ImaginaryPart', 1)
+    p.setNumber(name, 'View', 2)
+    p.run(name)
+    print(gmsh.option.getString('View[2].Name'))
+    gmsh.option.setString('View[2].Name', 'e_amp')
+    # gmsh.option.setNumber('View[2].ForceNumComponents', 4)
+    gmsh.option.setNumber('View[2].ScaleType', 2)
+    gmsh.option.setNumber('View[2].ForceNumComponents', 9)
+    # print('OLOLO', gmsh.option.getNumber('View[2].ForceNumComponents'))
+
+
 def _setup_plugins(box, wavenumber):
     p = gmsh.plugin
 
@@ -103,6 +125,8 @@ model = mspa.Mspa(MODEL_NAME)
 
 pro = Problem()
 pro.filename = MODEL_NAME + '.pro'
+pro.include('defines.pro')
+
 groups = gmsh.model.getPhysicalGroups()
 for g in groups:
     tag = g[1]
@@ -122,15 +146,15 @@ pro.group.ElementsOf('TrGr', 'Domain', OnOneSideOf='SkinFeed')
 1.480e9
 1.525e9 - optimal s11
 '''
-freq = 1.534e9
+# freq = 1.534e9
 
 fvar = {}
 fvar['mu0'] = mu_0
 fvar['nu0'] = 1.0 / fvar['mu0']
 fvar['ep0'] = epsilon_0
 fvar['epr'] = 3.38  # Dielectric constant for FR4 is ~4.5
-fvar['freq'] = freq
-fvar['k0'] = 2.0 * pi * freq / speed_of_light
+# fvar['freq'] = freq
+# fvar['k0'] = 2.0 * pi * freq / speed_of_light
 
 box = gmsh.model.occ.getBoundingBox(*model.tags['vol_air'])
 
@@ -143,7 +167,8 @@ fvar['pml_zmin'] = box[2]
 dc = 0.0  # 0.035e-3
 gap = model.dims['d']
 fvar['gap'] = gap
-fvar['pml_delta'] = 0.15  # 0.05  # 12.0 * (dc * 2.0 + dh)
+fvar['pml_delta'] = 0.02
+fvar['air_boundary'] = 0.1
 fvar['zl'] = 50.0  # Ohm load resistance
 
 
@@ -152,7 +177,7 @@ f = pro.function
 for name, value in fvar.items():
     f.constant(name, value)
 
-f.add('I', f.Complex(0, 1))
+f.add('I', f.Complex(0.0, 1.0))
 f.add('epsilon', 'ep0', region=['Air', 'SigmaInf'])
 f.add('epsilon', 'epr * ep0', region=['SkinFeed', 'Substrate'])
 f.add('nu', 'nu0', region=['Air', 'Substrate', 'SkinFeed', 'SigmaInf'])
@@ -162,13 +187,19 @@ f.define('js0')  # TODO remove
 f.define('ks0')  # TODO remove
 f.define('nxh')  # TODO remove
 
-f.add('DampingProfileX', '(X[] >= pml_xmax || X[] <= pml_xmin) ? (X[] >= pml_xmax ? 1.0 / (pml_delta - (X[] - pml_xmax)): 1.0 / (pml_delta - (pml_xmin - X[]))): 0.0')
-f.add('DampingProfileY', '(Y[] >= pml_ymax || Y[] <= pml_ymin) ? (Y[] >= pml_ymax ? 1.0 / (pml_delta - (Y[] - pml_ymax)): 1.0 / (pml_delta - (pml_ymin - Y[]))): 0.0')
-f.add('DampingProfileZ', '(Z[] >= pml_zmax || Z[] <= pml_zmin) ? (Z[] >= pml_zmax ? 1.0 / (pml_delta - (Z[] - pml_zmax)): 1.0 / (pml_delta - (pml_zmin - Z[]))): 0.0')
+# f.add('DampingProfileX', '(X[] >= pml_xmax || X[] <= pml_xmin) ? (X[] >= pml_xmax ? 1.0 / (pml_delta - (X[] - pml_xmax)): 1.0 / (pml_delta - (pml_xmin - X[]))): 0.0')
+# f.add('DampingProfileY', '(Y[] >= pml_ymax || Y[] <= pml_ymin) ? (Y[] >= pml_ymax ? 1.0 / (pml_delta - (Y[] - pml_ymax)): 1.0 / (pml_delta - (pml_ymin - Y[]))): 0.0')
+# f.add('DampingProfileZ', '(Z[] >= pml_zmax || Z[] <= pml_zmin) ? (Z[] >= pml_zmax ? 1.0 / (pml_delta - (Z[] - pml_zmax)): 1.0 / (pml_delta - (pml_zmin - Z[]))): 0.0')
+# f.add('cx', f.Complex(1.0, '-DampingProfileX[] / k0'))
+# f.add('cy', f.Complex(1.0, '-DampingProfileY[] / k0'))
+# f.add('cz', f.Complex(1.0, '-DampingProfileZ[] / k0'))
 
-f.add('cx', f.Complex(1.0, '-DampingProfileX[] / k0'))
-f.add('cy', f.Complex(1.0, '-DampingProfileY[] / k0'))
-f.add('cz', f.Complex(1.0, '-DampingProfileZ[] / k0'))
+f.add('r', f.Sqrt('X[]^2 + Y[]^2 + Z[]^2'))
+f.add('dumping_r', '(r[] >= air_boundary) ? 1.0 / (pml_delta - (r[] - air_boundary)) : 0.0')
+f.add('cx', f.Complex(1.0, '-dumping_r[] / k0'))
+f.add('cy', f.Complex(1.0, '-dumping_r[] / k0'))
+f.add('cz', f.Complex(1.0, '-dumping_r[] / k0'))
+
 f.add('tens', f.TensorDiag('cy[] * cz[] / cx[]',
                            'cx[] * cz[] / cy[]',
                            'cx[] * cy[] / cz[]'))
@@ -285,7 +316,7 @@ quantity.add(Name='y', Type='Integral',
              Value='1.0 / gap * {h} * dr[]', In='SkinFeed',
              Jacobian='JSur', Integration='I2')
 quantity.add(Name='s11', Type='Term',
-             Value='20.0 * Log10[Abs[(1.0 - zl * $y) / (1.0 + zl * $y)]]', In='SkinFeed')
+             Value='20.0 * Log10[Norm[(1.0 - zl * $y) / (1.0 + zl * $y)]]', In='SkinFeed')
 # quantity.add(Name='s11re', Type='Term',
 #              Value='Re[$s11]', In='SkinFeed')
 
@@ -315,30 +346,21 @@ gmsh.open(pro.filename)
 gmsh.onelab.run()
 gmsh.model.setCurrent(MODEL_NAME)
 
-minimal_box = True
-if minimal_box:
-    box = gmsh.model.occ.getBoundingBox(
-        *model.tags['vol_substrate'])  # sur_patch, vol_substrate, vol_patch
-else:
-    airbox = gmsh.model.occ.getBoundingBox(*model.tags['vol_patch'])
-    box = [0.0] * 6
-    eps = 1.0e-3
-    for i in range(6):
-        box[i] = airbox[i]
-    box[2] = -eps * 10.0
-    box[5] = +eps * 10.0
-    # box[0] -= eps
-    # box[1] -= eps
-    # box[2] -= eps * 10.0
-    # box[3] += eps
-    # box[4] += eps
-    # box[5] += eps * 10.0
-    # for i in range(3):
-    #     box[i] = airbox[i] - eps
-    #     box[i + 3] = airbox[i + 3] + eps
-    # box[2] += 1.0e-3
-    # box[5] += 1.0e-3
-_setup_plugins(box, fvar['k0'])
+_setup_planes()
+
+# minimal_box = True
+# if minimal_box:
+#     box = gmsh.model.occ.getBoundingBox(
+#         *model.tags['vol_substrate'])  # sur_patch, vol_substrate, vol_patch
+# else:
+#     airbox = gmsh.model.occ.getBoundingBox(*model.tags['vol_patch'])
+#     box = [0.0] * 6
+#     eps = 1.0e-3
+#     for i in range(6):
+#         box[i] = airbox[i]
+#     box[2] = -eps * 10.0
+#     box[5] = +eps * 10.0
+# _setup_plugins(box, fvar['k0'])
 
 if '-nopopup' not in sys.argv:
     gmsh.fltk.run()
