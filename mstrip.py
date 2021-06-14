@@ -7,6 +7,8 @@ import mspa
 import numpy as np
 import os
 import sys
+from pprint import pprint
+
 
 GDICT1 = {
     'Point': 1,
@@ -61,6 +63,26 @@ def _setup_planes():
     gmsh.option.setNumber('View[2].ForceNumComponents', 9)
     # print('OLOLO', gmsh.option.getNumber('View[2].ForceNumComponents'))
 
+def setup_onelab():
+    gmsh.onelab.set(
+        """
+        [
+            {
+                "type":"number",
+                "name":"Parameters/0Frequency",
+                "values": [1575],
+                "min": 1530,
+                "max": 1580,
+                "step": 5
+            },
+            {
+                "type": "string",
+                "name": "Parameters/0Macro",
+                "macro": "Gmsh"
+            }
+        ]
+        """
+    )
 
 def _setup_plugins(box, wavenumber):
     p = gmsh.plugin
@@ -169,7 +191,7 @@ gap = model.dims['d']
 fvar['gap'] = gap
 fvar['pml_delta'] = 0.02
 fvar['air_boundary'] = 0.1
-fvar['zl'] = 50.0  # Ohm load resistance
+fvar['zl'] = 50.0 * pi  # Ohm load resistance
 
 
 f = pro.function
@@ -178,8 +200,8 @@ for name, value in fvar.items():
     f.constant(name, value)
 
 f.add('I', f.Complex(0.0, 1.0))
-f.add('epsilon', 'ep0', region=['Air', 'SigmaInf'])
-f.add('epsilon', 'epr * ep0', region=['SkinFeed', 'Substrate'])
+f.add('epsilon', 'ep0', region=['Air', 'SkinFeed', 'SigmaInf'])
+f.add('epsilon', 'epr * ep0', region=['Substrate'])
 f.add('nu', 'nu0', region=['Air', 'Substrate', 'SkinFeed', 'SigmaInf'])
 
 f.add('sigma', '6.0e7')  # Copper 6.0e7
@@ -206,7 +228,7 @@ f.add('tens', f.TensorDiag('cy[] * cz[] / cx[]',
 f.add('epsilon', 'ep0 * tens[]', region='Pml')
 f.add('nu', 'nu0 / tens[]', region='Pml')
 f.add('BC_Fct_e', f.Vector(0.0, 0.0, 1.0 / gap))
-f.add('dr', f.Vector(1.0, 0.0, 0.0))
+f.add('dr', f.Vector(1.0, 0.0, 0.0), region=['SkinFeed'])
 
 constr = pro.constraint
 ef = constr.add('ElectricField')
@@ -342,11 +364,13 @@ gmsh.write(MODEL_NAME + '.msh')
 pro.make_file()
 pro.write_file()
 gmsh.open(pro.filename)
+setup_onelab()
 
 gmsh.onelab.run()
 gmsh.model.setCurrent(MODEL_NAME)
-
 _setup_planes()
+
+pprint(gmsh.onelab.get())
 
 # minimal_box = True
 # if minimal_box:
