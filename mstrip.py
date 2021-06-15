@@ -63,6 +63,7 @@ def _setup_planes():
     gmsh.option.setNumber('View[2].ForceNumComponents', 9)
     # print('OLOLO', gmsh.option.getNumber('View[2].ForceNumComponents'))
 
+
 def setup_onelab():
     gmsh.onelab.set(
         """
@@ -83,6 +84,7 @@ def setup_onelab():
         ]
         """
     )
+
 
 def _setup_plugins(box, wavenumber):
     p = gmsh.plugin
@@ -368,7 +370,7 @@ setup_onelab()
 
 gmsh.onelab.run()
 gmsh.model.setCurrent(MODEL_NAME)
-_setup_planes()
+# _setup_planes()
 
 pprint(gmsh.onelab.get())
 
