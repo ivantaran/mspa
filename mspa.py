@@ -91,7 +91,7 @@ class Mspa(object):
 
         tag = occ.addSphere(0.0, 0.0, 0.0, l_sub)
         vol_air = (3, tag)
-        tag = occ.addSphere(0.0, 0.0, 0.0, l_sub * 1.2)
+        tag = occ.addSphere(0.0, 0.0, 0.0, l_sub + 0.02)
         vol_pml = (3, tag)
 
         occ.synchronize()
@@ -146,7 +146,7 @@ class Mspa(object):
 
         # mesh sizes by elements
         mm = 1.0e-3
-        mesh_size_condutor = 2.5 * mm
+        mesh_size_condutor = 2.5 * mm  # 2.5
         mesh_size_substrate = 2.5 * mm
         mesh_size_environment = 10.0 * mm
         sur_feed = self.tags['sur_feed']
@@ -158,7 +158,10 @@ class Mspa(object):
         vol_pml = self.tags['vol_pml']
         vol_substrate = self.tags['vol_substrate']
 
-        tags = gmsh.model.getBoundary([vol_air, vol_pml], False, False, True)
+        tags = gmsh.model.getBoundary([vol_pml], False, False, True)
+        gmsh.model.mesh.setSize(tags, mesh_size_environment)
+
+        tags = gmsh.model.getBoundary([vol_air], False, False, True)
         gmsh.model.mesh.setSize(tags, mesh_size_environment)
 
         tags = gmsh.model.getBoundary(

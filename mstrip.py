@@ -7,6 +7,8 @@ import mspa
 import numpy as np
 import os
 import sys
+from pprint import pprint
+
 
 GDICT1 = {
     'Point': 1,
@@ -40,13 +42,57 @@ def add_integration(integration, name, group_dict, itype='Gauss'):
         ici.add(GeoElement=element, NumberOfPoints=value)
 
 
+def _setup_planes():
+    p = gmsh.plugin
+    name = 'CutPlane'
+    p.setNumber(name, 'A', 1.0)
+    p.setNumber(name, 'B', 0.0)
+    p.setNumber(name, 'C', 0.0)
+    p.setNumber(name, 'D', 0.0)
+    p.setNumber(name, 'View', 0)
+    p.run(name)
+    name = 'ModulusPhase'
+    p.setNumber(name, 'RealPart', 0)
+    p.setNumber(name, 'ImaginaryPart', 1)
+    p.setNumber(name, 'View', 2)
+    p.run(name)
+    print(gmsh.option.getString('View[2].Name'))
+    gmsh.option.setString('View[2].Name', 'e_amp')
+    # gmsh.option.setNumber('View[2].ForceNumComponents', 4)
+    gmsh.option.setNumber('View[2].ScaleType', 2)
+    gmsh.option.setNumber('View[2].ForceNumComponents', 9)
+    # print('OLOLO', gmsh.option.getNumber('View[2].ForceNumComponents'))
+
+
+def setup_onelab():
+    gmsh.onelab.set(
+        """
+        [
+            {
+                "type":"number",
+                "name":"Parameters/0Frequency",
+                "values": [1575],
+                "min": 1530,
+                "max": 1580,
+                "step": 5
+            },
+            {
+                "type": "string",
+                "name": "Parameters/0Macro",
+                "macro": "Gmsh"
+            }
+        ]
+        """
+    )
+
+
 def _setup_plugins(box, wavenumber):
     p = gmsh.plugin
 
     name = 'CutBox'
-    p.setNumber(name, 'NumPointsU', 100)
-    p.setNumber(name, 'NumPointsV', 100)
-    p.setNumber(name, 'NumPointsW', 5)
+    p.setNumber(name, 'NumPointsU', 40)
+    p.setNumber(name, 'NumPointsV', 40)
+    p.setNumber(name, 'NumPointsW', 2)
 
     xmin = box[3]
     ymin = box[4]
@@ -86,8 +132,16 @@ def _setup_plugins(box, wavenumber):
     p.setNumber(name, 'NumPointsTheta', 15)  # 25
     p.setNumber(name, 'EView', 2)
     p.setNumber(name, 'HView', 3)
-    p.setNumber(name, 'Normalize', 1)
+    p.setNumber(name, 'Normalize', 0)
     p.setNumber(name, 'dB', 1)
+    p.run(name)
+
+    name = 'MathEval'
+    p.setString(name, 'Expression0',
+                '10.0*Log10(Abs(v0)^2+Abs(v1)^2+Abs(v2)^2)')
+    p.setNumber(name, 'View', 2)
+    p.run(name)
+    p.setNumber(name, 'View', 3)
     p.run(name)
 
 
@@ -95,6 +149,8 @@ model = mspa.Mspa(MODEL_NAME)
 
 pro = Problem()
 pro.filename = MODEL_NAME + '.pro'
+pro.include('defines.pro')
+
 groups = gmsh.model.getPhysicalGroups()
 for g in groups:
     tag = g[1]
@@ -109,15 +165,20 @@ pro.group.define('DomainS')  # TODO remove
 pro.group.define('SurS')  # TODO remove
 pro.group.ElementsOf('TrGr', 'Domain', OnOneSideOf='SkinFeed')
 
-freq = 1.480e9  # 1.575e9
+'''
+1.575e9 - reference value
+1.480e9
+1.525e9 - optimal s11
+'''
+# freq = 1.534e9
 
 fvar = {}
 fvar['mu0'] = mu_0
 fvar['nu0'] = 1.0 / fvar['mu0']
 fvar['ep0'] = epsilon_0
 fvar['epr'] = 3.38  # Dielectric constant for FR4 is ~4.5
-fvar['freq'] = freq
-fvar['k0'] = 2.0 * pi * freq / speed_of_light
+# fvar['freq'] = freq
+# fvar['k0'] = 2.0 * pi * freq / speed_of_light
 
 box = gmsh.model.occ.getBoundingBox(*model.tags['vol_air'])
 
@@ -128,9 +189,11 @@ fvar['pml_xmin'] = box[0]
 fvar['pml_ymin'] = box[1]
 fvar['pml_zmin'] = box[2]
 dc = 0.0  # 0.035e-3
-dh = model.dims['d']
-fvar['dh'] = dh
-fvar['pml_delta'] = 0.05  # 12.0 * (dc * 2.0 + dh)
+gap = model.dims['d']
+fvar['gap'] = gap
+fvar['pml_delta'] = 0.02
+fvar['air_boundary'] = 0.1
+fvar['zl'] = 50.0 * pi  # Ohm load resistance
 
 
 f = pro.function
@@ -138,9 +201,9 @@ f = pro.function
 for name, value in fvar.items():
     f.constant(name, value)
 
-f.add('I', f.Complex(0, 1))
+f.add('I', f.Complex(0.0, 1.0))
 f.add('epsilon', 'ep0', region=['Air', 'SkinFeed', 'SigmaInf'])
-f.add('epsilon', 'epr * ep0', region='Substrate')
+f.add('epsilon', 'epr * ep0', region=['Substrate'])
 f.add('nu', 'nu0', region=['Air', 'Substrate', 'SkinFeed', 'SigmaInf'])
 
 f.add('sigma', '6.0e7')  # Copper 6.0e7
@@ -148,19 +211,26 @@ f.define('js0')  # TODO remove
 f.define('ks0')  # TODO remove
 f.define('nxh')  # TODO remove
 
-f.add('DampingProfileX', '(X[] >= pml_xmax || X[] <= pml_xmin) ? (X[] >= pml_xmax ? 1.0 / (pml_delta - (X[] - pml_xmax)): 1.0 / (pml_delta - (pml_xmin - X[]))): 0.0')
-f.add('DampingProfileY', '(Y[] >= pml_ymax || Y[] <= pml_ymin) ? (Y[] >= pml_ymax ? 1.0 / (pml_delta - (Y[] - pml_ymax)): 1.0 / (pml_delta - (pml_ymin - Y[]))): 0.0')
-f.add('DampingProfileZ', '(Z[] >= pml_zmax || Z[] <= pml_zmin) ? (Z[] >= pml_zmax ? 1.0 / (pml_delta - (Z[] - pml_zmax)): 1.0 / (pml_delta - (pml_zmin - Z[]))): 0.0')
+# f.add('DampingProfileX', '(X[] >= pml_xmax || X[] <= pml_xmin) ? (X[] >= pml_xmax ? 1.0 / (pml_delta - (X[] - pml_xmax)): 1.0 / (pml_delta - (pml_xmin - X[]))): 0.0')
+# f.add('DampingProfileY', '(Y[] >= pml_ymax || Y[] <= pml_ymin) ? (Y[] >= pml_ymax ? 1.0 / (pml_delta - (Y[] - pml_ymax)): 1.0 / (pml_delta - (pml_ymin - Y[]))): 0.0')
+# f.add('DampingProfileZ', '(Z[] >= pml_zmax || Z[] <= pml_zmin) ? (Z[] >= pml_zmax ? 1.0 / (pml_delta - (Z[] - pml_zmax)): 1.0 / (pml_delta - (pml_zmin - Z[]))): 0.0')
+# f.add('cx', f.Complex(1.0, '-DampingProfileX[] / k0'))
+# f.add('cy', f.Complex(1.0, '-DampingProfileY[] / k0'))
+# f.add('cz', f.Complex(1.0, '-DampingProfileZ[] / k0'))
 
-f.add('cx', f.Complex(1.0, '-DampingProfileX[] / k0'))
-f.add('cy', f.Complex(1.0, '-DampingProfileY[] / k0'))
-f.add('cz', f.Complex(1.0, '-DampingProfileZ[] / k0'))
+f.add('r', f.Sqrt('X[]^2 + Y[]^2 + Z[]^2'))
+f.add('dumping_r', '(r[] >= air_boundary) ? 1.0 / (pml_delta - (r[] - air_boundary)) : 0.0')
+f.add('cx', f.Complex(1.0, '-dumping_r[] / k0'))
+f.add('cy', f.Complex(1.0, '-dumping_r[] / k0'))
+f.add('cz', f.Complex(1.0, '-dumping_r[] / k0'))
+
 f.add('tens', f.TensorDiag('cy[] * cz[] / cx[]',
                            'cx[] * cz[] / cy[]',
                            'cx[] * cy[] / cz[]'))
 f.add('epsilon', 'ep0 * tens[]', region='Pml')
 f.add('nu', 'nu0 / tens[]', region='Pml')
-f.add('BC_Fct_e', f.Vector(0.0, 0.0, 1.0 / dh))
+f.add('BC_Fct_e', f.Vector(0.0, 0.0, 1.0 / gap))
+f.add('dr', f.Vector(1.0, 0.0, 0.0), region=['SkinFeed'])
 
 constr = pro.constraint
 ef = constr.add('ElectricField')
@@ -204,9 +274,11 @@ f = formulation.add('Microwave_e_BC', Type='FemEquation')
 q = f.add_quantity()
 q.add(Name='e', Type='Local', NameOfSpace='Hcurl_e')
 e = f.add_equation()
-e.add('Galerkin', '', 'Dof{e} , {e}', In='SurBC',
-      Integration='I2', Jacobian='JSur')
-e.add('Galerkin', '', '-BC_Fct_e[] , {e}',
+e.add('Galerkin', '',
+      'Dof{e} , {e}',
+      In='SurBC', Integration='I2', Jacobian='JSur')
+e.add('Galerkin', '',
+      '-BC_Fct_e[] , {e}',
       In='SurBC', Integration='I2', Jacobian='JSur')
 
 f = formulation.add('Microwave_e', Type='FemEquation')
@@ -215,23 +287,20 @@ q.add(Name='e', Type='Local', NameOfSpace='Hcurl_e')
 q.add(Name='h', Type='Local', NameOfSpace='Hcurl_h')
 
 e = f.add_equation()
-e.add('Galerkin', '', 'nu[] * Dof{d e} , {d e}', In='Domain',
-      Integration='I1', Jacobian='JVol')
-e.add('Galerkin', 'DtDof', 'sigma[] * Dof{e}, {e}',
-      In='DomainC', Integration='I1', Jacobian='JVol')
-e.add('Galerkin', 'DtDtDof', 'epsilon[] * Dof{e} , {e}',
+e.add('Galerkin', '',
+      'nu[] * Dof{d e} , {d e}',
       In='Domain', Integration='I1', Jacobian='JVol')
-e.add('Galerkin', 'DtDof', 'js0[], {e}',
-      In='DomainS', Integration='I1', Jacobian='JVol')
-e.add('Galerkin', 'DtDof', '-ks0[] , {d e}',
-      In='DomainS', Integration='I1', Jacobian='JVol')
-e.add('Galerkin', 'DtDof', '-nxh[] , {e}',
-      In='SurS', Integration='I1', Jacobian='JSur')
-
-# // store magnetic field for Admitance computation (Yin)
-e.add('Galerkin', '', 'Dof{h} , {h}', In='TrGr',
-      Integration='I1', Jacobian='JVol')
-e.add('Galerkin', '', '-I[] * nu[] * Dof{d e} / (2.0 * Pi * freq), {h}',
+e.add('Galerkin', 'DtDof',
+      'sigma[] * Dof{e}, {e}',
+      In='DomainC', Integration='I1', Jacobian='JVol')
+e.add('Galerkin', 'DtDtDof',
+      'epsilon[] * Dof{e} , {e}',
+      In='Domain', Integration='I1', Jacobian='JVol')
+e.add('Galerkin', '',
+      'Dof{h} , {h}',
+      In='TrGr', Integration='I1', Jacobian='JVol')
+e.add('Galerkin', '',
+      '-I[] * nu[] * Dof{d e} / (2.0 * Pi * freq), {h}',
       In='TrGr', Integration='I1', Jacobian='JVol')
 
 resolution = pro.resolution
@@ -255,58 +324,70 @@ operation.CreateDirectory('build')
 operation.Generate('A')
 operation.Solve('A')
 operation.SaveSolution('A')
-# operation.PostOperation('Microwave_e')
 
 pp = pro.postprocessing
 ppi = pp.add('Microwave_e', 'Microwave_e')
 quantity = ppi.add()
 quantity.add(Name='e', Type='Local',
-             Value='{e}', In='DomainTot', Jacobian='JVol')
+             Value='{e}',
+             In='DomainTot', Jacobian='JVol')
 quantity.add(Name='h', Type='Local',
-             Value='I[] * nu[] * {d e} / (2.0 * Pi * freq)', In='Domain', Jacobian='JVol')
-# quantity.add(Name='exh', Type='Local',
-#              Value='CrossProduct[{e}, Conj[I[] * nu[] * {d e} / (2.0 * Pi * freq)]]',
-#              In='Domain', Jacobian='JVol')
+             Value='I[] * nu[] * {d e} / (2.0 * Pi * freq)',
+             In='Domain', Jacobian='JVol')
 
+# admittance
+quantity.add(Name='y', Type='Integral',
+             Value='1.0 / gap * {h} * dr[]', In='SkinFeed',
+             Jacobian='JSur', Integration='I2')
+quantity.add(Name='s11', Type='Term',
+             Value='20.0 * Log10[Norm[(1.0 - zl * $y) / (1.0 + zl * $y)]]', In='SkinFeed')
+# quantity.add(Name='s11re', Type='Term',
+#              Value='Re[$s11]', In='SkinFeed')
 
 po = pro.postoperation
 poi = po.add('Microwave_e', 'Microwave_e')
 poi0 = poi.add()
-poi0.add('e', OnElementsOf='Region[{Domain, -Pml}]', File='./build/e.pos')
-poi0.add('h', OnElementsOf='Region[{Domain, -Pml}]', File='./build/h.pos')
-# poi0.add('exh', OnElementsOf='Region[{Domain, -Pml}]',
-#          File='./build/exh_pml.pos')
+poi0.add('e', OnElementsOf='Region[{Domain}]', File='./build/e.pos')  # , -Pml
+poi0.add('h', OnElementsOf='Region[{Domain}]', File='./build/h.pos')  # , -Pml
+poi0.add('y[SkinFeed]', OnGlobal='', Format='FrequencyTable',
+         StoreInVariable='$y', File='./build/y.txt')
+poi0.add('s11', OnRegion='SkinFeed', Format='FrequencyTable',
+         StoreInVariable='$s11', SendToServer='"s11"', File='./build/s11.txt')
+# poi0.add('s11re', OnRegion='SkinFeed', Format='Table',
+#          SendToServer='"s11re"', File='./build/s11re.txt')
 
+#
+# gmsh.merge('./build/e.pos')
+# gmsh.merge('./build/h.pos')
 
 gmsh.model.mesh.generate(3)
+# gmsh.model.mesh.optimize('Netgen')
 gmsh.write(MODEL_NAME + '.msh')
 pro.make_file()
 pro.write_file()
 gmsh.open(pro.filename)
-
-# gmsh.model.mesh.generate(1)
-# gmsh.merge('./build/e.pos')
-# gmsh.merge('./build/h_pml.pos')
+setup_onelab()
 
 gmsh.onelab.run()
 gmsh.model.setCurrent(MODEL_NAME)
+# _setup_planes()
 
-minimal_box = True
-if minimal_box:
-    box = gmsh.model.occ.getBoundingBox(
-        *model.tags['vol_substrate'])  # sur_patch, vol_substrate
-else:
-    airbox = gmsh.model.occ.getBoundingBox(*model.tags['vol_substrate'])
-    box = [0.0] * 6
-    eps = 1.0e-5
-    for i in range(3):
-        box[i] = airbox[i] - eps
-        box[i + 3] = airbox[i + 3] + eps
-    # box[2] += 1.0e-3
-    # box[5] += 1.0e-3
-_setup_plugins(box, fvar['k0'])
+pprint(gmsh.onelab.get())
 
-# gmsh.onelab.run()
+# minimal_box = True
+# if minimal_box:
+#     box = gmsh.model.occ.getBoundingBox(
+#         *model.tags['vol_substrate'])  # sur_patch, vol_substrate, vol_patch
+# else:
+#     airbox = gmsh.model.occ.getBoundingBox(*model.tags['vol_patch'])
+#     box = [0.0] * 6
+#     eps = 1.0e-3
+#     for i in range(6):
+#         box[i] = airbox[i]
+#     box[2] = -eps * 10.0
+#     box[5] = +eps * 10.0
+# _setup_plugins(box, fvar['k0'])
+
 if '-nopopup' not in sys.argv:
     gmsh.fltk.run()
 
