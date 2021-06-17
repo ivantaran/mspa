@@ -146,9 +146,9 @@ class Mspa(object):
 
         # mesh sizes by elements
         mm = 1.0e-3
-        mesh_size_condutor = 2.5 * mm  # 2.5
+        mesh_size_condutor = 1.0 * mm  # 2.5
         mesh_size_substrate = 2.5 * mm
-        mesh_size_environment = 10.0 * mm
+        mesh_size_environment = 15.0 * mm
         sur_feed = self.tags['sur_feed']
         sur_gnd = self.tags['sur_gnd']
         sur_patch = self.tags['sur_patch']
@@ -169,7 +169,7 @@ class Mspa(object):
         gmsh.model.mesh.setSize(tags, mesh_size_substrate)
 
         tags = gmsh.model.getBoundary(
-            [sur_feed, sur_gnd, sur_patch], False, False, True)
+            [sur_feed, sur_patch, sur_gnd], False, False, True)
         gmsh.model.mesh.setSize(tags, mesh_size_condutor)
 
     def _create_groups(self):

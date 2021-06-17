@@ -69,17 +69,29 @@ def setup_onelab():
         """
         [
             {
-                "type":"number",
-                "name":"Parameters/0Frequency",
-                "values": [1575],
-                "min": 1530,
-                "max": 1580,
-                "step": 5
+                "type": "number",
+                "name": "Model/Frequency",
+                "values": [1560.0],
+                "min": 1560.0,
+                "max": 1590.0,
+                "step": 5.0,
+                "index": 0,
+                "clients": {"Gmsh": 0}
             },
             {
-                "type": "string",
-                "name": "Parameters/0Macro",
-                "macro": "Gmsh"
+                "type": "number",
+                "name": "Model/Lambda",
+                "readOnly": true,
+                "index": -1,
+                "clients": {"Gmsh": 0}
+            },
+            {
+                "type": "number",
+                "name": "Model/ololo",
+                "label": "ololo",
+                "readOnly": true,
+                "index": 1,
+                "clients": {"Gmsh": 0}
             }
         ]
         """
@@ -372,8 +384,13 @@ gmsh.onelab.run()
 gmsh.model.setCurrent(MODEL_NAME)
 # _setup_planes()
 
-pprint(gmsh.onelab.get())
-
+print(gmsh.onelab.get())
+names = gmsh.onelab.getNames()
+print(names)
+for name in names:
+    string = gmsh.onelab.getString(name)
+    number = gmsh.onelab.getNumber(name)
+    print(name, string, number)
 # minimal_box = True
 # if minimal_box:
 #     box = gmsh.model.occ.getBoundingBox(
