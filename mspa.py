@@ -143,11 +143,16 @@ class Mspa(object):
         # 2: By physical group
         # 3: By mesh partition
         gmsh.option.setNumber('Mesh.ColorCarousel', 2)
+        gmsh.option.setNumber('Mesh.VolumeEdges', 0)
+
+        gmsh.option.setNumber("Mesh.MeshSizeExtendFromBoundary", 0)
+        gmsh.option.setNumber("Mesh.MeshSizeFromPoints", 0)
+        gmsh.option.setNumber("Mesh.MeshSizeFromCurvature", 0)
 
         # mesh sizes by elements
         mm = 1.0e-3
-        mesh_size_condutor = 1.0 * mm  # 2.5
-        mesh_size_substrate = 2.5 * mm
+        mesh_size_condutor = 5.0 * mm  # 2.5
+        mesh_size_substrate = 5.0 * mm
         mesh_size_environment = 15.0 * mm
         sur_feed = self.tags['sur_feed']
         sur_gnd = self.tags['sur_gnd']
@@ -157,6 +162,24 @@ class Mspa(object):
         vol_patch = self.tags['vol_patch']
         vol_pml = self.tags['vol_pml']
         vol_substrate = self.tags['vol_substrate']
+
+        tags = gmsh.model.getBoundary(
+            [vol_substrate, vol_patch], False, False, False)
+        tags = gmsh.model.getBoundary(tags, False, False, False)
+        # tags = gmsh.model.getBoundary(
+        #     [sur_feed, sur_patch, sur_gnd], False, False, False)
+        a = np.array(tags)
+        a = list(np.unique(a[:, 1]))
+        gmsh.model.mesh.field.add("Distance", 1)
+        gmsh.model.mesh.field.setNumbers(1, "CurvesList", a)
+        gmsh.model.mesh.field.setNumber(1, "NumPointsPerCurve", 100)
+        gmsh.model.mesh.field.add("Threshold", 2)
+        gmsh.model.mesh.field.setNumber(2, "InField", 1)
+        gmsh.model.mesh.field.setNumber(2, "SizeMin", 1.0 * mm)
+        gmsh.model.mesh.field.setNumber(2, "SizeMax", 15.0 * mm)
+        gmsh.model.mesh.field.setNumber(2, "DistMin", 0.0 * mm)
+        gmsh.model.mesh.field.setNumber(2, "DistMax", 30.0 * mm)
+        gmsh.model.mesh.field.setAsBackgroundMesh(2)
 
         tags = gmsh.model.getBoundary([vol_pml], False, False, True)
         gmsh.model.mesh.setSize(tags, mesh_size_environment)

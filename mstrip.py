@@ -205,7 +205,7 @@ gap = model.dims['d']
 fvar['gap'] = gap
 fvar['pml_delta'] = 0.02
 fvar['air_boundary'] = 0.1
-fvar['zl'] = 50.0 * pi  # Ohm load resistance
+fvar['zl'] = 50.0  # Ohm load resistance
 
 
 f = pro.function
