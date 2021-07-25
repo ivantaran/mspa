@@ -3,7 +3,8 @@ from pygetdp import Group, Function, Problem
 from pygetdp.helpers import build_example_png, print_html
 from scipy.constants import mu_0, epsilon_0, pi, speed_of_light
 import gmsh
-import mspa
+# from comsol_patch_1575 import Mspa
+from patch_137 import Mspa
 import numpy as np
 import os
 import sys
@@ -45,9 +46,9 @@ def add_integration(integration, name, group_dict, itype='Gauss'):
 def _setup_planes():
     p = gmsh.plugin
     name = 'CutPlane'
-    p.setNumber(name, 'A', 1.0)
+    p.setNumber(name, 'A', 0.0)
     p.setNumber(name, 'B', 0.0)
-    p.setNumber(name, 'C', 0.0)
+    p.setNumber(name, 'C', 1.0)
     p.setNumber(name, 'D', 0.0)
     p.setNumber(name, 'View', 0)
     p.run(name)
@@ -56,12 +57,9 @@ def _setup_planes():
     p.setNumber(name, 'ImaginaryPart', 1)
     p.setNumber(name, 'View', 2)
     p.run(name)
-    print(gmsh.option.getString('View[2].Name'))
     gmsh.option.setString('View[2].Name', 'e_amp')
-    # gmsh.option.setNumber('View[2].ForceNumComponents', 4)
-    gmsh.option.setNumber('View[2].ScaleType', 2)
+    # gmsh.option.setNumber('View[2].ScaleType', 2)
     gmsh.option.setNumber('View[2].ForceNumComponents', 9)
-    # print('OLOLO', gmsh.option.getNumber('View[2].ForceNumComponents'))
 
 
 def setup_onelab():
@@ -71,10 +69,10 @@ def setup_onelab():
             {
                 "type": "number",
                 "name": "Model/Frequency",
-                "values": [1560.0],
-                "min": 1560.0,
-                "max": 1590.0,
-                "step": 5.0,
+                "values": [120.0],
+                "min": 100.0,
+                "max": 160.0,
+                "step": 10.0,
                 "index": 0,
                 "clients": {"Gmsh": 0}
             },
@@ -157,7 +155,7 @@ def _setup_plugins(box, wavenumber):
     p.run(name)
 
 
-model = mspa.Mspa(MODEL_NAME)
+model = Mspa(MODEL_NAME)
 
 pro = Problem()
 pro.filename = MODEL_NAME + '.pro'
@@ -201,10 +199,10 @@ fvar['pml_xmin'] = box[0]
 fvar['pml_ymin'] = box[1]
 fvar['pml_zmin'] = box[2]
 dc = 0.0  # 0.035e-3
-gap = model.dims['d']
+gap = model.dims['gap']
 fvar['gap'] = gap
-fvar['pml_delta'] = 0.02
-fvar['air_boundary'] = 0.1
+fvar['pml_delta'] = 0.2
+fvar['air_boundary'] =1.3
 fvar['zl'] = 50.0  # Ohm load resistance
 
 
@@ -241,7 +239,8 @@ f.add('tens', f.TensorDiag('cy[] * cz[] / cx[]',
                            'cx[] * cy[] / cz[]'))
 f.add('epsilon', 'ep0 * tens[]', region='Pml')
 f.add('nu', 'nu0 / tens[]', region='Pml')
-f.add('BC_Fct_e', f.Vector(0.0, 0.0, 1.0 / gap))
+f.add('BC_Fct_e', f.Vector(0.707 / gap, 0.707 / gap * 0.0, 0.0))
+# f.add('BC_Fct_e', f.Vector(0.0, 0.0, 1.0 / gap))
 f.add('dr', f.Vector(1.0, 0.0, 0.0), region=['SkinFeed'])
 
 constr = pro.constraint
@@ -361,6 +360,7 @@ poi = po.add('Microwave_e', 'Microwave_e')
 poi0 = poi.add()
 poi0.add('e', OnElementsOf='Region[{Domain}]', File='./build/e.pos')  # , -Pml
 poi0.add('h', OnElementsOf='Region[{Domain}]', File='./build/h.pos')  # , -Pml
+# poi0.add('e_line', OnLine='{{0.0, 0.0, 0.03} {0.0, 0.0, 1.0}} {160}', File='./build/e_line.pos')
 poi0.add('y[SkinFeed]', OnGlobal='', Format='FrequencyTable',
          StoreInVariable='$y', File='./build/y.txt')
 poi0.add('s11', OnRegion='SkinFeed', Format='FrequencyTable',
@@ -382,15 +382,16 @@ setup_onelab()
 
 gmsh.onelab.run()
 gmsh.model.setCurrent(MODEL_NAME)
-# _setup_planes()
+_setup_planes()
 
-print(gmsh.onelab.get())
-names = gmsh.onelab.getNames()
-print(names)
-for name in names:
-    string = gmsh.onelab.getString(name)
-    number = gmsh.onelab.getNumber(name)
-    print(name, string, number)
+# print(gmsh.onelab.get())
+# names = gmsh.onelab.getNames()
+# print(names)
+# for name in names:
+#     string = gmsh.onelab.getString(name)
+#     number = gmsh.onelab.getNumber(name)
+#     print(name, string, number)
+
 # minimal_box = True
 # if minimal_box:
 #     box = gmsh.model.occ.getBoundingBox(

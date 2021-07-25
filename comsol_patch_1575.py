@@ -4,15 +4,6 @@ import os
 import sys
 import numpy as np
 
-# gmsh.open('mspa.pro')
-# gmsh.onelab.run()
-
-# gmsh.model.setCurrent('mspa.geo')
-# path = os.path.dirname(os.path.abspath(__file__))
-# gmsh.merge(os.path.join(path, 'mspa.pro'))
-
-#
-
 
 class Mspa(object):
     '''
@@ -166,20 +157,39 @@ class Mspa(object):
         tags = gmsh.model.getBoundary(
             [vol_substrate, vol_patch], False, False, False)
         tags = gmsh.model.getBoundary(tags, False, False, False)
-        # tags = gmsh.model.getBoundary(
-        #     [sur_feed, sur_patch, sur_gnd], False, False, False)
         a = np.array(tags)
         a = list(np.unique(a[:, 1]))
+        # tags = gmsh.model.getBoundary([sur_feed], False, False, False)
+        # af = np.array(tags)
+        # af = list(np.unique(af[:, 1]))
+        # a = np.setdiff1d(a, af)
+
         gmsh.model.mesh.field.add("Distance", 1)
         gmsh.model.mesh.field.setNumbers(1, "CurvesList", a)
         gmsh.model.mesh.field.setNumber(1, "NumPointsPerCurve", 100)
-        gmsh.model.mesh.field.add("Threshold", 2)
-        gmsh.model.mesh.field.setNumber(2, "InField", 1)
-        gmsh.model.mesh.field.setNumber(2, "SizeMin", 1.0 * mm)
-        gmsh.model.mesh.field.setNumber(2, "SizeMax", 15.0 * mm)
-        gmsh.model.mesh.field.setNumber(2, "DistMin", 0.0 * mm)
-        gmsh.model.mesh.field.setNumber(2, "DistMax", 30.0 * mm)
-        gmsh.model.mesh.field.setAsBackgroundMesh(2)
+
+        # gmsh.model.mesh.field.add("Distance", 2)
+        # gmsh.model.mesh.field.setNumbers(2, "CurvesList", af)
+        # gmsh.model.mesh.field.setNumber(2, "NumPointsPerCurve", 20)
+
+        gmsh.model.mesh.field.add("Threshold", 3)
+        gmsh.model.mesh.field.setNumber(3, "InField", 1)
+        gmsh.model.mesh.field.setNumber(3, "SizeMin", 7.5 * mm)
+        gmsh.model.mesh.field.setNumber(3, "SizeMax", 15.0 * mm)
+        gmsh.model.mesh.field.setNumber(3, "DistMin", 0.0 * mm)
+        gmsh.model.mesh.field.setNumber(3, "DistMax", 10.0 * mm)
+
+        # gmsh.model.mesh.field.add("Threshold", 4)
+        # gmsh.model.mesh.field.setNumber(4, "InField", 2)
+        # gmsh.model.mesh.field.setNumber(4, "SizeMin", 0.1 * mm)
+        # gmsh.model.mesh.field.setNumber(4, "SizeMax", 15.0 * mm)
+        # gmsh.model.mesh.field.setNumber(4, "DistMin", 0.0 * mm)
+        # gmsh.model.mesh.field.setNumber(4, "DistMax", 30.0 * mm)
+
+        # gmsh.model.mesh.field.add("Min", 5)
+        # gmsh.model.mesh.field.setNumbers(5, "FieldsList", [3, 4])
+
+        gmsh.model.mesh.field.setAsBackgroundMesh(3)
 
         tags = gmsh.model.getBoundary([vol_pml], False, False, True)
         gmsh.model.mesh.setSize(tags, mesh_size_environment)
