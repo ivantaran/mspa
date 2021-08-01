@@ -353,8 +353,6 @@ quantity.add(Name='y', Type='Integral',
              Jacobian='JSur', Integration='I2')
 quantity.add(Name='s11', Type='Term',
              Value='20.0 * Log10[Norm[(1.0 - zl * $y) / (1.0 + zl * $y)]]', In='SkinFeed')
-# quantity.add(Name='s11re', Type='Term',
-#              Value='Re[$s11]', In='SkinFeed')
 
 po = pro.postoperation
 poi = po.add('Microwave_e', 'Microwave_e')
@@ -367,22 +365,19 @@ poi0.add('y[SkinFeed]', OnGlobal='', Format='FrequencyTable',
          StoreInVariable='$y', File='./build/y.txt')
 poi0.add('s11', OnRegion='SkinFeed', Format='FrequencyTable',
          StoreInVariable='$s11', SendToServer='"s11"', File='./build/s11.txt')
-# poi0.add('s11re', OnRegion='SkinFeed', Format='Table',
-#          SendToServer='"s11re"', File='./build/s11re.txt')
 
-#
 # gmsh.merge('./build/e.pos')
 # gmsh.merge('./build/h.pos')
 
 gmsh.model.mesh.generate(3)
-gmsh.write(MODEL_NAME + '.msh')
+gmsh.write(f'{MODEL_NAME}.msh')
 pro.make_file()
 pro.write_file()
 gmsh.open(pro.filename)
 
 gmsh.onelab.run()
 gmsh.model.setCurrent(MODEL_NAME)
-# _setup_planes()
+_setup_planes()
 
 # print(gmsh.onelab.get())
 # names = gmsh.onelab.getNames()

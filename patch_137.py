@@ -23,9 +23,9 @@ class Mspa(object):
         w_sub = 1300.0 * mm
         l_sub = 1300.0 * mm
         r_feed = 2.1 * mm
-        r_shield = 10.0 * mm
-        d_feed = 260 * mm
-        r_cut = 0.05
+        r_shield = 15.0 * mm
+        d_feed = 240 * mm
+        r_cut = 0.07
 
         self.dims = {}
         self.dims['d'] = d
@@ -171,10 +171,15 @@ class Mspa(object):
         tags = gmsh.model.getBoundary(tags, False, False, False)
         a = np.array(tags)
         a = list(np.unique(a[:, 1]))
+        b = [43, 31, 33, 50, 32, 54]
 
         gmsh.model.mesh.field.add("Distance", 1)
         gmsh.model.mesh.field.setNumbers(1, "CurvesList", a)
         gmsh.model.mesh.field.setNumber(1, "NumPointsPerCurve", 100)
+
+        gmsh.model.mesh.field.add("Distance", 2)
+        gmsh.model.mesh.field.setNumbers(2, "CurvesList", b)
+        gmsh.model.mesh.field.setNumber(2, "NumPointsPerCurve", 20)
 
         gmsh.model.mesh.field.add("Threshold", 3)
         gmsh.model.mesh.field.setNumber(3, "InField", 1)
@@ -183,7 +188,18 @@ class Mspa(object):
         gmsh.model.mesh.field.setNumber(3, "DistMin", 0.00)
         gmsh.model.mesh.field.setNumber(3, "DistMax", 0.20)
 
-        gmsh.model.mesh.field.setAsBackgroundMesh(3)
+        gmsh.model.mesh.field.add("Threshold", 4)
+        gmsh.model.mesh.field.setNumber(4, "InField", 2)
+        gmsh.model.mesh.field.setNumber(4, "SizeMin", 0.002)
+        gmsh.model.mesh.field.setNumber(4, "SizeMax", 0.02)
+        gmsh.model.mesh.field.setNumber(4, "DistMin", 0.0)
+        gmsh.model.mesh.field.setNumber(4, "DistMax", 0.02)
+        gmsh.model.mesh.field.setNumber(4, "StopAtDistMax", 1)
+
+        gmsh.model.mesh.field.add("Min", 5)
+        gmsh.model.mesh.field.setNumbers(5, "FieldsList", [3, 4])
+
+        gmsh.model.mesh.field.setAsBackgroundMesh(5)
 
     def _create_groups(self):
 
