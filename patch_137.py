@@ -22,10 +22,10 @@ class Mspa(object):
         l_patch = 640.0 * mm
         w_sub = 1300.0 * mm
         l_sub = 1300.0 * mm
-        r_feed = 1.5 * mm
-        r_shield = 15.0 * mm
-        d_feed = 40 * mm
-        r_cut = 0.08
+        r_feed = 2.1 * mm
+        r_shield = 10.0 * mm
+        d_feed = 260 * mm
+        r_cut = 0.05
 
         self.dims = {}
         self.dims['d'] = d
@@ -77,11 +77,14 @@ class Mspa(object):
                                l_patch, -0.5 * d, 0.0, 0.0, d, r_cut)
         vol_cyl2 = (3, tag)
 
-        tag = occ.add_cylinder(0.0, d_feed - 0.5 * w_path, -0.5 * d, 0.0, 0.0, d, r_feed)
+        tag = occ.add_cylinder(0.0, d_feed - 0.5 *
+                               w_path, -0.5 * d, 0.0, 0.0, d, r_feed)
         vol_feed = (3, tag)
-        tag = occ.add_cylinder(0.0, d_feed - 0.5 * w_path, -0.5 * d, 0.0, 0.0, d, r_feed)
+        tag = occ.add_cylinder(0.0, d_feed - 0.5 *
+                               w_path, -0.5 * d, 0.0, 0.0, d, r_feed)
         vol_feed = (3, tag)
-        tag = occ.add_cylinder(0.0, d_feed - 0.5 * w_path, -0.5 * d, 0.0, 0.0, d, r_shield)
+        tag = occ.add_cylinder(0.0, d_feed - 0.5 *
+                               w_path, -0.5 * d, 0.0, 0.0, d, r_shield)
         vol_shield = (3, tag)
 
         tags, _ = occ.cut([vol_patch], [vol_cyl1, vol_cyl2, vol_shield, vol_feed],
@@ -115,11 +118,12 @@ class Mspa(object):
 
         self.tags['sur_feed'] = (2, 36)
         self.tags['sur_conductor'] = [19, 20, 21, 25, 23, 34]
-        
+
         self.tags['sur_pml'] = sur_pml
         self.tags['vol_air'] = vol_air
         self.tags['vol_pml'] = vol_pml
-        self.tags['vol_substrate'] = [vol_patch[1], vol_substrate1[1], vol_substrate2[1]]
+        self.tags['vol_substrate'] = [vol_patch[1],
+                                      vol_substrate1[1], vol_substrate2[1]]
 
     def _set_mesh_settings(self):
         gmsh.option.setNumber('General.Antialiasing', 1)
@@ -160,8 +164,8 @@ class Mspa(object):
 
         tags = gmsh.model.getBoundary(
             [
-                (3, vol_substrate[0]), 
-                (3, vol_substrate[1]), 
+                (3, vol_substrate[0]),
+                (3, vol_substrate[1]),
                 (3, vol_substrate[2])
             ], False, False, False)
         tags = gmsh.model.getBoundary(tags, False, False, False)

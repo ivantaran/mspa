@@ -202,7 +202,7 @@ dc = 0.0  # 0.035e-3
 gap = model.dims['gap']
 fvar['gap'] = gap
 fvar['pml_delta'] = 0.2
-fvar['air_boundary'] =1.3
+fvar['air_boundary'] = 1.3
 fvar['zl'] = 50.0  # Ohm load resistance
 
 
@@ -239,7 +239,13 @@ f.add('tens', f.TensorDiag('cy[] * cz[] / cx[]',
                            'cx[] * cy[] / cz[]'))
 f.add('epsilon', 'ep0 * tens[]', region='Pml')
 f.add('nu', 'nu0 / tens[]', region='Pml')
-f.add('BC_Fct_e', f.Vector(0.707 / gap, 0.707 / gap * 0.0, 0.0))
+
+y_feed = model.dims['d_feed'] - 0.5 * model.dims['w_path']
+f.constant('y_feed', y_feed)
+
+f.add('r_xy', f.Sqrt('X[]^2 + (Y[] + y_feed)^2'))
+f.add('BC_Fct_e', f.Vector('X[] / r_xy[] / gap',
+      f'(Y[] + y_feed) / r_xy[] / gap', 0.0))
 # f.add('BC_Fct_e', f.Vector(0.0, 0.0, 1.0 / gap))
 f.add('dr', f.Vector(1.0, 0.0, 0.0), region=['SkinFeed'])
 
