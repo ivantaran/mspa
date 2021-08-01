@@ -85,8 +85,8 @@ def setup_onelab():
             },
             {
                 "type": "number",
-                "name": "Model/ololo",
-                "label": "ololo",
+                "name": "Model/WaveNumber",
+                "label": "Wave Number",
                 "readOnly": true,
                 "index": 1,
                 "clients": {"Gmsh": 0}
@@ -160,6 +160,7 @@ model = Mspa(MODEL_NAME)
 pro = Problem()
 pro.filename = MODEL_NAME + '.pro'
 pro.include('defines.pro')
+setup_onelab()
 
 groups = gmsh.model.getPhysicalGroups()
 for g in groups:
@@ -175,16 +176,10 @@ pro.group.define('DomainS')  # TODO remove
 pro.group.define('SurS')  # TODO remove
 pro.group.ElementsOf('TrGr', 'Domain', OnOneSideOf='SkinFeed')
 
-'''
-1.575e9 - reference value
-1.480e9
-1.525e9 - optimal s11
-'''
-# freq = 1.534e9
 
 fvar = {}
 fvar['mu0'] = mu_0
-fvar['nu0'] = 1.0 / fvar['mu0']
+fvar['nu0'] = 1.0 / mu_0
 fvar['ep0'] = epsilon_0
 fvar['epr'] = 3.38  # Dielectric constant for FR4 is ~4.5
 # fvar['freq'] = freq
@@ -366,7 +361,8 @@ poi = po.add('Microwave_e', 'Microwave_e')
 poi0 = poi.add()
 poi0.add('e', OnElementsOf='Region[{Domain}]', File='./build/e.pos')  # , -Pml
 poi0.add('h', OnElementsOf='Region[{Domain}]', File='./build/h.pos')  # , -Pml
-# poi0.add('e_line', OnLine='{{0.0, 0.0, 0.03} {0.0, 0.0, 1.0}} {160}', File='./build/e_line.pos')
+# poi0.add('e', OnLine='{{0.0, 0.0, 0.03} {0.0, 0.0, 1.0}} {160}',
+#          File='./build/e_line.pos')
 poi0.add('y[SkinFeed]', OnGlobal='', Format='FrequencyTable',
          StoreInVariable='$y', File='./build/y.txt')
 poi0.add('s11', OnRegion='SkinFeed', Format='FrequencyTable',
@@ -379,16 +375,14 @@ poi0.add('s11', OnRegion='SkinFeed', Format='FrequencyTable',
 # gmsh.merge('./build/h.pos')
 
 gmsh.model.mesh.generate(3)
-# gmsh.model.mesh.optimize('Netgen')
 gmsh.write(MODEL_NAME + '.msh')
 pro.make_file()
 pro.write_file()
 gmsh.open(pro.filename)
-setup_onelab()
 
 gmsh.onelab.run()
 gmsh.model.setCurrent(MODEL_NAME)
-_setup_planes()
+# _setup_planes()
 
 # print(gmsh.onelab.get())
 # names = gmsh.onelab.getNames()
