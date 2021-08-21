@@ -9,3 +9,5 @@ k0 = 2.0 * Pi / lambda;
 SetNumber["Model/Lambda", lambda];
 SetNumber["Model/WaveNumber", k0];
 // Printf["ololo: %g", GetNumber["Model/Frequency"]];
+Printf["ololo!"];
+Printf[OnelabAction];

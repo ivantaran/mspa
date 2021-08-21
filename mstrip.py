@@ -63,13 +63,14 @@ def _setup_planes():
 
 
 def setup_onelab():
+    gmsh.initialize()
     gmsh.onelab.set(
         """
         [
             {
                 "type": "number",
                 "name": "Model/Frequency",
-                "values": [120.0],
+                "values": [137.5],
                 "min": 100.0,
                 "max": 160.0,
                 "step": 10.0,
@@ -80,7 +81,7 @@ def setup_onelab():
                 "type": "number",
                 "name": "Model/Lambda",
                 "readOnly": true,
-                "index": -1,
+                "index": 1,
                 "clients": {"Gmsh": 0}
             },
             {
@@ -88,7 +89,38 @@ def setup_onelab():
                 "name": "Model/WaveNumber",
                 "label": "Wave Number",
                 "readOnly": true,
-                "index": 1,
+                "index": 2,
+                "clients": {"Gmsh": 0}
+            },
+            {
+                "type": "number",
+                "name": "Model/CutRadius",
+                "label": "Cut Radius",
+                "values": [70.0],
+                "min": 10.0,
+                "max": 120.0,
+                "step": 10.0,
+                "clients": {"GetDP": 1}
+            },
+            {
+                "type": "number",
+                "name": "Model/FeedDistance",
+                "label": "Feed Distance",
+                "values": [100.0],
+                "min": 50.0,
+                "max": 400.0,
+                "step": 10.0,
+                "clients": {"GetDP": 1}
+            },
+            {
+                "type": "number",
+                "name": "Model/PatchSize",
+                "label": "PatchSize",
+                "values": [825.0],
+                "min": 600.0,
+                "max": 900.0,
+                "step": 10.0,
+                "index": 4,
                 "clients": {"Gmsh": 0}
             }
         ]
@@ -155,12 +187,12 @@ def _setup_plugins(box, wavenumber):
     p.run(name)
 
 
+setup_onelab()
 model = Mspa(MODEL_NAME)
 
 pro = Problem()
 pro.filename = MODEL_NAME + '.pro'
 pro.include('defines.pro')
-setup_onelab()
 
 groups = gmsh.model.getPhysicalGroups()
 for g in groups:
@@ -181,7 +213,7 @@ fvar = {}
 fvar['mu0'] = mu_0
 fvar['nu0'] = 1.0 / mu_0
 fvar['ep0'] = epsilon_0
-fvar['epr'] = 3.38  # Dielectric constant for FR4 is ~4.5
+fvar['epr'] = 1.5  # Dielectric constant for FR4 is ~4.5
 # fvar['freq'] = freq
 # fvar['k0'] = 2.0 * pi * freq / speed_of_light
 
@@ -369,23 +401,27 @@ poi0.add('s11', OnRegion='SkinFeed', Format='FrequencyTable',
 # gmsh.merge('./build/e.pos')
 # gmsh.merge('./build/h.pos')
 
-gmsh.model.mesh.generate(3)
-gmsh.write(f'{MODEL_NAME}.msh')
 pro.make_file()
 pro.write_file()
 gmsh.open(pro.filename)
+gmsh.model.set_current(MODEL_NAME)
 
-gmsh.onelab.run()
-gmsh.model.setCurrent(MODEL_NAME)
-_setup_planes()
+result = []
+for s in np.arange(90.0, 10.0, -10.0):
+    gmsh.onelab.set_number('Model/FeedDistance', [s])
+    model.refresh()
+    gmsh.model.mesh.generate(3)
+    gmsh.write(f'{MODEL_NAME}.msh')
+    gmsh.onelab.run()
+    s11 = gmsh.onelab.get_number('s11')[0]
+    size = gmsh.onelab.get_number('Model/FeedDistance')[0]
+    freq = gmsh.onelab.get_number('Model/Frequency')[0]
+    result.append([freq, size, s11])
+pprint(result)
+gmsh.finalize()
+exit(0)
 
-# print(gmsh.onelab.get())
-# names = gmsh.onelab.getNames()
-# print(names)
-# for name in names:
-#     string = gmsh.onelab.getString(name)
-#     number = gmsh.onelab.getNumber(name)
-#     print(name, string, number)
+# _setup_planes()
 
 # minimal_box = True
 # if minimal_box:
@@ -401,7 +437,26 @@ _setup_planes()
 #     box[5] = +eps * 10.0
 # _setup_plugins(box, fvar['k0'])
 
-if '-nopopup' not in sys.argv:
-    gmsh.fltk.run()
+
+def check_event():
+    action = gmsh.onelab.get_string('ONELAB/Action')
+    if len(action) == 0:
+        pass
+    elif action[0] == 'check':
+        # gmsh.onelab.clear('ONELAB/Action')
+        # createGeometryAndMesh()
+        gmsh.graphics.draw()
+    elif action[0] == 'compute':
+        print(f'{action[0]}')
+        gmsh.onelab.run()
+    gmsh.onelab.clear('ONELAB/Action')
+    return True
+
+
+if "-nopopup" not in sys.argv:
+    gmsh.fltk.initialize()
+    # gmsh.fltk.run()
+    while gmsh.fltk.isAvailable() and check_event():
+        gmsh.fltk.wait()
 
 gmsh.finalize()

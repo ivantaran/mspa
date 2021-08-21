@@ -12,22 +12,30 @@ class Mspa(object):
 
     def __init__(self, name='untitled'):
         super().__init__()
-
         self.name = name
+        self.dims = {}
+        self.tags = {}
+        self.refresh()
 
+    def refresh(self):
+        gmsh.clear()
         mm = 1.0e-3
 
+        r_cut = gmsh.onelab.get_number('Model/CutRadius')[0]
+        size = gmsh.onelab.get_number('Model/PatchSize')[0]
+        d_feed = gmsh.onelab.get_number('Model/FeedDistance')[0]
+        # 200.0 * mm  # 240 * mm
+        r_cut *= mm
+        size *= mm
+        d_feed *= mm
         d = 30.0 * mm
-        w_path = 640.0 * mm  # 791.0 * mm
-        l_patch = 640.0 * mm
+        w_path = size  # 640 791.0 * mm
+        l_patch = size
         w_sub = 1300.0 * mm
         l_sub = 1300.0 * mm
         r_feed = 2.1 * mm
         r_shield = 15.0 * mm
-        d_feed = 240 * mm
-        r_cut = 0.07
 
-        self.dims = {}
         self.dims['d'] = d
         self.dims['gap'] = r_shield - r_feed
         self.dims['r_cut'] = r_cut
@@ -39,9 +47,6 @@ class Mspa(object):
         self.dims['r_shield'] = r_shield
         self.dims['d_feed'] = d_feed
 
-        self.tags = {}
-
-        gmsh.initialize()
         gmsh.model.add(self.name)
         self._create_antenna()
         gmsh.model.occ.synchronize()
@@ -77,14 +82,11 @@ class Mspa(object):
                                l_patch, -0.5 * d, 0.0, 0.0, d, r_cut)
         vol_cyl2 = (3, tag)
 
-        tag = occ.add_cylinder(0.0, d_feed - 0.5 *
-                               w_path, -0.5 * d, 0.0, 0.0, d, r_feed)
+        tag = occ.add_cylinder(0.0, -d_feed, -0.5 * d, 0.0, 0.0, d, r_feed)
         vol_feed = (3, tag)
-        tag = occ.add_cylinder(0.0, d_feed - 0.5 *
-                               w_path, -0.5 * d, 0.0, 0.0, d, r_feed)
+        tag = occ.add_cylinder(0.0, -d_feed, -0.5 * d, 0.0, 0.0, d, r_feed)
         vol_feed = (3, tag)
-        tag = occ.add_cylinder(0.0, d_feed - 0.5 *
-                               w_path, -0.5 * d, 0.0, 0.0, d, r_shield)
+        tag = occ.add_cylinder(0.0, -d_feed, -0.5 * d, 0.0, 0.0, d, r_shield)
         vol_shield = (3, tag)
 
         tags, _ = occ.cut([vol_patch], [vol_cyl1, vol_cyl2, vol_shield, vol_feed],
@@ -172,10 +174,11 @@ class Mspa(object):
         a = np.array(tags)
         a = list(np.unique(a[:, 1]))
         b = [43, 31, 33, 50, 32, 54]
+        c = [v for v in a if v not in b]
 
         gmsh.model.mesh.field.add("Distance", 1)
-        gmsh.model.mesh.field.setNumbers(1, "CurvesList", a)
-        gmsh.model.mesh.field.setNumber(1, "NumPointsPerCurve", 100)
+        gmsh.model.mesh.field.setNumbers(1, "CurvesList", c)
+        gmsh.model.mesh.field.setNumber(1, "NumPointsPerCurve", 20)
 
         gmsh.model.mesh.field.add("Distance", 2)
         gmsh.model.mesh.field.setNumbers(2, "CurvesList", b)
@@ -183,18 +186,18 @@ class Mspa(object):
 
         gmsh.model.mesh.field.add("Threshold", 3)
         gmsh.model.mesh.field.setNumber(3, "InField", 1)
-        gmsh.model.mesh.field.setNumber(3, "SizeMin", 0.02)
+        gmsh.model.mesh.field.setNumber(3, "SizeMin", 0.01)
         gmsh.model.mesh.field.setNumber(3, "SizeMax", 0.20)
         gmsh.model.mesh.field.setNumber(3, "DistMin", 0.00)
         gmsh.model.mesh.field.setNumber(3, "DistMax", 0.20)
 
         gmsh.model.mesh.field.add("Threshold", 4)
         gmsh.model.mesh.field.setNumber(4, "InField", 2)
-        gmsh.model.mesh.field.setNumber(4, "SizeMin", 0.002)
-        gmsh.model.mesh.field.setNumber(4, "SizeMax", 0.02)
-        gmsh.model.mesh.field.setNumber(4, "DistMin", 0.0)
-        gmsh.model.mesh.field.setNumber(4, "DistMax", 0.02)
-        gmsh.model.mesh.field.setNumber(4, "StopAtDistMax", 1)
+        gmsh.model.mesh.field.setNumber(4, "SizeMin", 0.002)  # 0.002
+        gmsh.model.mesh.field.setNumber(4, "SizeMax", 0.20)
+        gmsh.model.mesh.field.setNumber(4, "DistMin", 0.00)
+        gmsh.model.mesh.field.setNumber(4, "DistMax", 0.20)
+        # gmsh.model.mesh.field.setNumber(4, "StopAtDistMax", 1)
 
         gmsh.model.mesh.field.add("Min", 5)
         gmsh.model.mesh.field.setNumbers(5, "FieldsList", [3, 4])
