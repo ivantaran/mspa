@@ -82,6 +82,9 @@ class Mspa(object):
                                l_patch, -0.5 * d, 0.0, 0.0, d, r_cut)
         vol_cyl2 = (3, tag)
 
+        tag = occ.add_cylinder(0.0, 0.0, -0.5 * d, 0.0, 0.0, d, r_cut/2)
+        vol_cyl3 = (3, tag)
+
         tag = occ.add_cylinder(0.0, -d_feed, -0.5 * d, 0.0, 0.0, d, r_feed)
         vol_feed = (3, tag)
         tag = occ.add_cylinder(0.0, -d_feed, -0.5 * d, 0.0, 0.0, d, r_feed)
@@ -89,7 +92,15 @@ class Mspa(object):
         tag = occ.add_cylinder(0.0, -d_feed, -0.5 * d, 0.0, 0.0, d, r_shield)
         vol_shield = (3, tag)
 
-        tags, _ = occ.cut([vol_patch], [vol_cyl1, vol_cyl2, vol_shield, vol_feed],
+        # w0 = 0.05
+        # l0 = 0.04
+        # l1 = 0.40
+        # tag = occ.add_box(-0.5 * w_path, -0.5 * l0, -0.5 * d, w0, l0, d)
+        # vol_1 = (3, tag)
+        # tag = occ.add_box(-0.5 * w_path + w0, -0.5 * l1, -0.5 * d, l0, l1, d)
+        # vol_2 = (3, tag)
+
+        tags, _ = occ.cut([vol_patch], [vol_cyl1, vol_cyl2, vol_cyl3, vol_shield, vol_feed],
                           tag=0, removeObject=True, removeTool=True)
         vol_patch = tags[0]
 
@@ -113,19 +124,22 @@ class Mspa(object):
         tags, _ = occ.cut([vol_substrate], [vol_patch],
                           tag=0, removeObject=True, removeTool=False)
         vol_substrate1 = tags[0]
-        vol_substrate2 = tags[1]
+        vol_substrate2 = tags[2]
+        # vol_substrate2 = tags[1]
 
         occ.synchronize()
         occ.removeAllDuplicates()
 
-        self.tags['sur_feed'] = (2, 36)
-        self.tags['sur_conductor'] = [19, 20, 21, 25, 23, 34]
+        self.tags['sur_feed'] = (2, 44)
+        self.tags['sur_conductor'] = [38, 28, 42, 24, 26, 43, 23, 22, 33]
+        # self.tags['sur_feed'] = (2, 36)
+        # self.tags['sur_conductor'] = [19, 20, 21, 25, 23, 34]
 
         self.tags['sur_pml'] = sur_pml
         self.tags['vol_air'] = vol_air
         self.tags['vol_pml'] = vol_pml
         self.tags['vol_substrate'] = [vol_patch[1],
-                                      vol_substrate1[1], vol_substrate2[1]]
+                                      vol_substrate1[1], vol_substrate2[1], 14]
 
     def _set_mesh_settings(self):
         gmsh.option.setNumber('General.Antialiasing', 1)
@@ -180,11 +194,11 @@ class Mspa(object):
         tags = gmsh.model.getBoundary(tags, False, False, False)
         a = np.array(tags)
         a = list(np.unique(a[:, 1]))
-        b = [43, 31, 33, 50, 32, 54]
-        c = [v for v in a if v not in b]
+        # b = [43, 31, 33, 50, 32, 54]
+        # c = [v for v in a if v not in b]
 
         gmsh.model.mesh.field.add("Distance", 1)
-        gmsh.model.mesh.field.setNumbers(1, "CurvesList", c)
+        gmsh.model.mesh.field.setNumbers(1, "CurvesList", a)
         gmsh.model.mesh.field.setNumber(1, "NumPointsPerCurve", 20)
 
         gmsh.model.mesh.field.add("Threshold", 2)
@@ -195,7 +209,7 @@ class Mspa(object):
         gmsh.model.mesh.field.setNumber(2, "DistMax", 0.20)
 
         gmsh.model.mesh.field.add("Cylinder", 3)
-        gmsh.model.mesh.field.setNumber(3, "Radius", 0.04)
+        gmsh.model.mesh.field.setNumber(3, "Radius", 0.006)
         gmsh.model.mesh.field.setNumber(3, "VIn", 0.001)
         gmsh.model.mesh.field.setNumber(3, "VOut", 0.30)
         gmsh.model.mesh.field.setNumber(3, "XAxis", 0.00)

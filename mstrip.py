@@ -107,7 +107,7 @@ def setup_onelab():
                 "type": "number",
                 "name": "Model/FeedDistance",
                 "label": "Feed Distance",
-                "values": [170.0],
+                "values": [270.0],
                 "min": 50.0,
                 "max": 400.0,
                 "step": 10.0,
@@ -117,7 +117,7 @@ def setup_onelab():
                 "type": "number",
                 "name": "Model/PatchSize",
                 "label": "PatchSize",
-                "values": [925.0],
+                "values": [825.0],
                 "min": 600.0,
                 "max": 900.0,
                 "step": 10.0,
@@ -384,9 +384,10 @@ pro.write_file()
 gmsh.open(pro.filename)
 gmsh.model.set_current(MODEL_NAME)
 
-gmsh.model.mesh.generate(3)
-gmsh.write(f'{MODEL_NAME}.msh')
-gmsh.onelab.run()
+# gmsh.model.mesh.generate(3)
+# gmsh.write(f'{MODEL_NAME}.msh')
+# gmsh.onelab.run()
+
 # d = np.loadtxt('/home/taran/work/gmsh/mspa/build/e_linez.txt')
 # v1 = np.vectorize(complex)(d[:, 3], d[:, 4])
 # v2 = np.vectorize(complex)(d[:, 6], d[:, 7])
