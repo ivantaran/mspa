@@ -28,13 +28,13 @@ class Mspa(object):
         r_cut *= mm
         size *= mm
         d_feed *= mm
-        d = 30.0 * mm
+        d = 29.0 * mm
         w_path = size  # 640 791.0 * mm
         l_patch = size
-        w_sub = 1300.0 * mm
-        l_sub = 1300.0 * mm
-        r_feed = 2.1 * mm
-        r_shield = 15.0 * mm
+        w_sub = 1170.0 * mm
+        l_sub = 1170.0 * mm
+        r_feed = 1.6 * mm
+        r_shield = 4.0 * mm
 
         self.dims['d'] = d
         self.dims['gap'] = r_shield - r_feed
@@ -154,10 +154,17 @@ class Mspa(object):
         gmsh.option.setNumber("Mesh.MeshSizeFromCurvature", 0)
 
         # mesh sizes by elements
+        d = self.dims['d']
+        r_cut = self.dims['r_cut']
+        w_path = self.dims['w_path']
+        l_patch = self.dims['l_patch']
+        w_sub = self.dims['w_sub']
+        l_sub = self.dims['l_sub']
+        r_feed = self.dims['r_feed']
+        d_feed = self.dims['d_feed']
+        r_shield = self.dims['r_shield']
+
         mm = 1.0e-3
-        mesh_size_condutor = 5.0 * mm  # 2.5
-        mesh_size_substrate = 5.0 * mm
-        mesh_size_environment = 15.0 * mm
         sur_feed = self.tags['sur_feed']
         sur_pml = self.tags['sur_pml']
         vol_air = self.tags['vol_air']
@@ -180,29 +187,28 @@ class Mspa(object):
         gmsh.model.mesh.field.setNumbers(1, "CurvesList", c)
         gmsh.model.mesh.field.setNumber(1, "NumPointsPerCurve", 20)
 
-        gmsh.model.mesh.field.add("Distance", 2)
-        gmsh.model.mesh.field.setNumbers(2, "CurvesList", b)
-        gmsh.model.mesh.field.setNumber(2, "NumPointsPerCurve", 20)
+        gmsh.model.mesh.field.add("Threshold", 2)
+        gmsh.model.mesh.field.setNumber(2, "InField", 1)
+        gmsh.model.mesh.field.setNumber(2, "SizeMin", 0.01)
+        gmsh.model.mesh.field.setNumber(2, "SizeMax", 0.20)
+        gmsh.model.mesh.field.setNumber(2, "DistMin", 0.00)
+        gmsh.model.mesh.field.setNumber(2, "DistMax", 0.20)
 
-        gmsh.model.mesh.field.add("Threshold", 3)
-        gmsh.model.mesh.field.setNumber(3, "InField", 1)
-        gmsh.model.mesh.field.setNumber(3, "SizeMin", 0.01)
-        gmsh.model.mesh.field.setNumber(3, "SizeMax", 0.20)
-        gmsh.model.mesh.field.setNumber(3, "DistMin", 0.00)
-        gmsh.model.mesh.field.setNumber(3, "DistMax", 0.20)
+        gmsh.model.mesh.field.add("Cylinder", 3)
+        gmsh.model.mesh.field.setNumber(3, "Radius", 0.04)
+        gmsh.model.mesh.field.setNumber(3, "VIn", 0.001)
+        gmsh.model.mesh.field.setNumber(3, "VOut", 0.30)
+        gmsh.model.mesh.field.setNumber(3, "XAxis", 0.00)
+        gmsh.model.mesh.field.setNumber(3, "XCenter", 0.00)
+        gmsh.model.mesh.field.setNumber(3, "YAxis", 0.00)
+        gmsh.model.mesh.field.setNumber(3, "YCenter", -d_feed)
+        gmsh.model.mesh.field.setNumber(3, "ZAxis", d)
+        gmsh.model.mesh.field.setNumber(3, "ZCenter", 0.00)
 
-        gmsh.model.mesh.field.add("Threshold", 4)
-        gmsh.model.mesh.field.setNumber(4, "InField", 2)
-        gmsh.model.mesh.field.setNumber(4, "SizeMin", 0.002)  # 0.002
-        gmsh.model.mesh.field.setNumber(4, "SizeMax", 0.20)
-        gmsh.model.mesh.field.setNumber(4, "DistMin", 0.00)
-        gmsh.model.mesh.field.setNumber(4, "DistMax", 0.20)
-        # gmsh.model.mesh.field.setNumber(4, "StopAtDistMax", 1)
+        gmsh.model.mesh.field.add("Min", 4)
+        gmsh.model.mesh.field.setNumbers(4, "FieldsList", [2, 3])
 
-        gmsh.model.mesh.field.add("Min", 5)
-        gmsh.model.mesh.field.setNumbers(5, "FieldsList", [3, 4])
-
-        gmsh.model.mesh.field.setAsBackgroundMesh(5)
+        gmsh.model.mesh.field.setAsBackgroundMesh(4)
 
     def _create_groups(self):
 

@@ -1,4 +1,5 @@
 
+from numpy.lib.type_check import imag
 from pygetdp import Group, Function, Problem
 from pygetdp.helpers import build_example_png, print_html
 from scipy.constants import mu_0, epsilon_0, pi, speed_of_light
@@ -9,7 +10,7 @@ import numpy as np
 import os
 import sys
 from pprint import pprint
-
+from matplotlib import pyplot
 
 GDICT1 = {
     'Point': 1,
@@ -70,9 +71,9 @@ def setup_onelab():
             {
                 "type": "number",
                 "name": "Model/Frequency",
-                "values": [137.5],
-                "min": 100.0,
-                "max": 160.0,
+                "values": [141.0],
+                "min": 130.0,
+                "max": 180.0,
                 "step": 10.0,
                 "index": 0,
                 "clients": {"Gmsh": 0}
@@ -96,9 +97,9 @@ def setup_onelab():
                 "type": "number",
                 "name": "Model/CutRadius",
                 "label": "Cut Radius",
-                "values": [70.0],
+                "values": [100.0],
                 "min": 10.0,
-                "max": 120.0,
+                "max": 170.0,
                 "step": 10.0,
                 "clients": {"GetDP": 1}
             },
@@ -106,7 +107,7 @@ def setup_onelab():
                 "type": "number",
                 "name": "Model/FeedDistance",
                 "label": "Feed Distance",
-                "values": [100.0],
+                "values": [170.0],
                 "min": 50.0,
                 "max": 400.0,
                 "step": 10.0,
@@ -116,7 +117,7 @@ def setup_onelab():
                 "type": "number",
                 "name": "Model/PatchSize",
                 "label": "PatchSize",
-                "values": [825.0],
+                "values": [925.0],
                 "min": 600.0,
                 "max": 900.0,
                 "step": 10.0,
@@ -128,63 +129,38 @@ def setup_onelab():
     )
 
 
-def _setup_plugins(box, wavenumber):
+def _setup_plugins(r, wavenumber):
     p = gmsh.plugin
 
-    name = 'CutBox'
-    p.setNumber(name, 'NumPointsU', 40)
-    p.setNumber(name, 'NumPointsV', 40)
-    p.setNumber(name, 'NumPointsW', 2)
+    name = 'CutSphere'
+    p.set_number(name, 'Xc', 0.0)
+    p.set_number(name, 'Yc', 0.0)
+    p.set_number(name, 'Xc', 0.0)
+    p.set_number(name, 'R', r)
 
-    xmin = box[3]
-    ymin = box[4]
-    zmin = box[5]
-    xmax = box[0]
-    ymax = box[1]
-    zmax = box[2]
-
-    p.setNumber(name, 'X0', xmin)
-    p.setNumber(name, 'Y0', ymin)
-    p.setNumber(name, 'Z0', zmin)
-
-    p.setNumber(name, 'X1', xmax)
-    p.setNumber(name, 'Y1', ymin)
-    p.setNumber(name, 'Z1', zmin)
-
-    p.setNumber(name, 'X2', xmin)
-    p.setNumber(name, 'Y2', ymax)
-    p.setNumber(name, 'Z2', zmin)
-
-    p.setNumber(name, 'X3', xmin)
-    p.setNumber(name, 'Y3', ymin)
-    p.setNumber(name, 'Z3', zmax)
-
-    p.setNumber(name, 'ConnectPoints', 1)
-    p.setNumber(name, 'Boundary', 1)
-
-    p.setNumber(name, 'View', 0)
+    p.set_number(name, 'View', 0)
     p.run(name)
-    p.setNumber(name, 'View', 1)
-    p.run(name)
+    # p.set_number(name, 'View', 1)
+    # p.run(name)
 
-    name = 'NearToFarField'
-    p.setNumber(name, 'Wavenumber', wavenumber)
-    p.setNumber(name, 'RFar', 1)
-    p.setNumber(name, 'NumPointsPhi', 30)  # 50
-    p.setNumber(name, 'NumPointsTheta', 15)  # 25
-    p.setNumber(name, 'EView', 2)
-    p.setNumber(name, 'HView', 3)
-    p.setNumber(name, 'Normalize', 0)
-    p.setNumber(name, 'dB', 1)
-    p.run(name)
+    # name = 'NearToFarField'
+    # p.setNumber(name, 'Wavenumber', wavenumber)
+    # p.setNumber(name, 'RFar', 1)
+    # p.setNumber(name, 'NumPointsPhi', 30)  # 50
+    # p.setNumber(name, 'NumPointsTheta', 15)  # 25
+    # p.setNumber(name, 'EView', 2)
+    # p.setNumber(name, 'HView', 3)
+    # p.setNumber(name, 'Normalize', 0)
+    # p.setNumber(name, 'dB', 1)
+    # p.run(name)
 
-    name = 'MathEval'
-    p.setString(name, 'Expression0',
-                '10.0*Log10(Abs(v0)^2+Abs(v1)^2+Abs(v2)^2)')
-    p.setNumber(name, 'View', 2)
-    p.run(name)
-    p.setNumber(name, 'View', 3)
-    p.run(name)
+    # name = 'MathEval'
+    # p.setString(name, 'Expression0',
+    #             '10.0*Log10(Abs(v0)^2+Abs(v1)^2+Abs(v2)^2)')
+    # p.setNumber(name, 'View', 2)
+    # p.run(name)
+    # p.setNumber(name, 'View', 3)
+    # p.run(name)
 
 
 setup_onelab()
@@ -213,7 +189,7 @@ fvar = {}
 fvar['mu0'] = mu_0
 fvar['nu0'] = 1.0 / mu_0
 fvar['ep0'] = epsilon_0
-fvar['epr'] = 1.5  # Dielectric constant for FR4 is ~4.5
+fvar['epr'] = 1.1  # 1.5  # Dielectric constant for FR4 is ~4.5
 # fvar['freq'] = freq
 # fvar['k0'] = 2.0 * pi * freq / speed_of_light
 
@@ -391,8 +367,10 @@ poi = po.add('Microwave_e', 'Microwave_e')
 poi0 = poi.add()
 poi0.add('e', OnElementsOf='Region[{Domain}]', File='./build/e.pos')  # , -Pml
 poi0.add('h', OnElementsOf='Region[{Domain}]', File='./build/h.pos')  # , -Pml
-# poi0.add('e', OnLine='{{0.0, 0.0, 0.03} {0.0, 0.0, 1.0}} {160}',
-#          File='./build/e_line.pos')
+# poi0.add('e', OnLine='{{0.0, 0.0, 0.2} {0.0, 0.0, 1.2}} {100}',
+#          File='./build/e_linez.pos')
+# poi0.add('e', OnLine='{{0.0, 0.0, 0.2} {0.0, 0.0, 1.2}} {100}', Format='SimpleTable',
+#          File='./build/e_linez.txt')
 poi0.add('y[SkinFeed]', OnGlobal='', Format='FrequencyTable',
          StoreInVariable='$y', File='./build/y.txt')
 poi0.add('s11', OnRegion='SkinFeed', Format='FrequencyTable',
@@ -406,20 +384,62 @@ pro.write_file()
 gmsh.open(pro.filename)
 gmsh.model.set_current(MODEL_NAME)
 
-result = []
-for s in np.arange(90.0, 10.0, -10.0):
-    gmsh.onelab.set_number('Model/FeedDistance', [s])
-    model.refresh()
-    gmsh.model.mesh.generate(3)
-    gmsh.write(f'{MODEL_NAME}.msh')
-    gmsh.onelab.run()
-    s11 = gmsh.onelab.get_number('s11')[0]
-    size = gmsh.onelab.get_number('Model/FeedDistance')[0]
-    freq = gmsh.onelab.get_number('Model/Frequency')[0]
-    result.append([freq, size, s11])
-pprint(result)
-gmsh.finalize()
-exit(0)
+gmsh.model.mesh.generate(3)
+gmsh.write(f'{MODEL_NAME}.msh')
+gmsh.onelab.run()
+# d = np.loadtxt('/home/taran/work/gmsh/mspa/build/e_linez.txt')
+# v1 = np.vectorize(complex)(d[:, 3], d[:, 4])
+# v2 = np.vectorize(complex)(d[:, 6], d[:, 7])
+# v = -v1 * v2
+# angle = np.degrees(np.angle(v2) - np.angle(v1))
+# angle[angle < 0.0] += 360.0
+# pyplot.plot(angle, 'o-')
+# pyplot.plot(np.real(v1), np.imag(v1), 'o-')
+# pyplot.plot(np.real(v2), np.imag(v2), 'o-')
+# pyplot.xlim([-5, 5])
+# pyplot.ylim([-5, 5])
+# pyplot.grid()
+# pyplot.show()
+
+# result = []
+# for s in np.arange(895.0, 945.0, 10.0):
+#     # gmsh.onelab.set_number('Model/CutRadius', [s])
+#     # gmsh.onelab.set_number('Model/FeedDistance', [s])
+#     # gmsh.onelab.set_number('Model/Frequency', [s])
+#     gmsh.onelab.set_number('Model/PatchSize', [s])
+#     model.refresh()
+#     gmsh.model.mesh.generate(3)
+#     gmsh.write(f'{MODEL_NAME}.msh')
+#     gmsh.model.set_current(MODEL_NAME)
+#     gmsh.onelab.run()
+#     s11 = gmsh.onelab.get_number('s11')[0]
+#     size = gmsh.onelab.get_number('Model/PatchSize')[0]
+#     freq = gmsh.onelab.get_number('Model/Frequency')[0]
+#     result.append([freq, size, s11])
+#     # d = np.loadtxt('/home/taran/work/gmsh/mspa/build/e_linez.txt')
+#     # np.savetxt(f'/home/taran/work/gmsh/mspa/build/e_linez_{int(s):03d}.txt', d)
+#     # v1 = np.vectorize(complex)(d[:, 3], d[:, 4])
+#     # v2 = np.vectorize(complex)(d[:, 6], d[:, 7])
+#     # angle = np.degrees(np.angle(-v1 * v2))
+#     # v1 = np.vectorize(complex)(d[:, 3], d[:, 4])
+#     # v2 = np.vectorize(complex)(d[:, 6], d[:, 7])
+#     # v = -v1 * v2
+#     # angle = np.degrees(np.angle(v2) - np.angle(v1))
+#     # angle[angle < 0.0] += 360.0
+#     # pyplot.plot(angle, 'o-')
+#     # pyplot.grid()
+#     # pyplot.savefig(f'v1v2_{int(s):03d}.png')
+#     # pyplot.cla()
+#     # pyplot.clf()
+#     # pyplot.plot(v, 'o-')
+#     # pyplot.grid()
+#     # pyplot.savefig(f'v_{int(s):03d}.png')
+#     # pyplot.cla()
+#     # pyplot.clf()
+#     # result.append((size, angle))
+# pprint(result)
+# gmsh.finalize()
+# exit(0)
 
 # _setup_planes()
 
@@ -435,28 +455,28 @@ exit(0)
 #         box[i] = airbox[i]
 #     box[2] = -eps * 10.0
 #     box[5] = +eps * 10.0
-# _setup_plugins(box, fvar['k0'])
+# _setup_plugins(1.2, 2.881)
 
 
-def check_event():
-    action = gmsh.onelab.get_string('ONELAB/Action')
-    if len(action) == 0:
-        pass
-    elif action[0] == 'check':
-        # gmsh.onelab.clear('ONELAB/Action')
-        # createGeometryAndMesh()
-        gmsh.graphics.draw()
-    elif action[0] == 'compute':
-        print(f'{action[0]}')
-        gmsh.onelab.run()
-    gmsh.onelab.clear('ONELAB/Action')
-    return True
+# def check_event():
+#     action = gmsh.onelab.get_string('ONELAB/Action')
+#     if len(action) == 0:
+#         pass
+#     elif action[0] == 'check':
+#         # gmsh.onelab.clear('ONELAB/Action')
+#         # createGeometryAndMesh()
+#         gmsh.graphics.draw()
+#     elif action[0] == 'compute':
+#         print(f'{action[0]}')
+#         gmsh.onelab.run()
+#     gmsh.onelab.clear('ONELAB/Action')
+#     return True
 
 
 if "-nopopup" not in sys.argv:
     gmsh.fltk.initialize()
-    # gmsh.fltk.run()
-    while gmsh.fltk.isAvailable() and check_event():
-        gmsh.fltk.wait()
+    gmsh.fltk.run()
+    # while gmsh.fltk.isAvailable() and check_event():
+    #     gmsh.fltk.wait()
 
 gmsh.finalize()
