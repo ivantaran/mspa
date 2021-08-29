@@ -89,15 +89,19 @@ class Mspa(object):
         tag = occ.add_cylinder(0.0, -d_feed, -0.5 * d, 0.0, 0.0, d, r_shield)
         vol_shield = (3, tag)
 
-        # w0 = 0.05
-        # l0 = 0.04
-        # l1 = 0.40
-        # tag = occ.add_box(-0.5 * w_path, -0.5 * l0, -0.5 * d, w0, l0, d)
-        # vol_1 = (3, tag)
-        # tag = occ.add_box(-0.5 * w_path + w0, -0.5 * l1, -0.5 * d, l0, l1, d)
-        # vol_2 = (3, tag)
+        w0 = 0.05
+        l0 = 0.03
+        l1 = 0.40
+        tag = occ.add_box(-0.5 * w_path, -0.5 * l0, -0.5 * d, w0, l0, d)
+        vol_1 = (3, tag)
+        tag = occ.add_box(-0.5 * w_path + w0, -0.5 * l1, -0.5 * d, l0, l1, d)
+        vol_2 = (3, tag)
+        tag = occ.add_box(0.5 * w_path, -0.5 * l0, -0.5 * d, -w0, l0, d)
+        vol_3 = (3, tag)
+        tag = occ.add_box(0.5 * w_path - w0, -0.5 * l1, -0.5 * d, -l0, l1, d)
+        vol_4 = (3, tag)
 
-        tags, _ = occ.cut([vol_patch], [vol_cyl1, vol_cyl2, vol_shield, vol_feed],
+        tags, _ = occ.cut([vol_patch], [vol_cyl1, vol_cyl2, vol_shield, vol_feed, vol_1, vol_2, vol_3, vol_4],
                           tag=0, removeObject=True, removeTool=True)
         vol_patch = tags[0]
 
@@ -126,8 +130,8 @@ class Mspa(object):
         occ.synchronize()
         occ.removeAllDuplicates()
 
-        self.tags['sur_feed'] = (2, 36)
-        self.tags['sur_conductor'] = [19, 20, 21, 25, 23, 34, 35]
+        self.tags['sur_feed'] = (2, 52)
+        self.tags['sur_conductor'] = [19, 20, 21, 23, 25, 51]
 
         self.tags['sur_pml'] = sur_pml
         self.tags['vol_air'] = vol_air

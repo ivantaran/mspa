@@ -73,7 +73,7 @@ def setup_onelab():
                 "name": "Model/Frequency",
                 "values": [141.0],
                 "min": 130.0,
-                "max": 180.0,
+                "max": 141.0,
                 "step": 10.0,
                 "index": 0,
                 "clients": {"Gmsh": 0}
@@ -97,7 +97,7 @@ def setup_onelab():
                 "type": "number",
                 "name": "Model/CutRadius",
                 "label": "Cut Radius",
-                "values": [100.0],
+                "values": [1.0],
                 "min": 10.0,
                 "max": 170.0,
                 "step": 10.0,
