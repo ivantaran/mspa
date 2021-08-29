@@ -82,9 +82,6 @@ class Mspa(object):
                                l_patch, -0.5 * d, 0.0, 0.0, d, r_cut)
         vol_cyl2 = (3, tag)
 
-        tag = occ.add_cylinder(0.0, 0.0, -0.5 * d, 0.0, 0.0, d, r_cut/2)
-        vol_cyl3 = (3, tag)
-
         tag = occ.add_cylinder(0.0, -d_feed, -0.5 * d, 0.0, 0.0, d, r_feed)
         vol_feed = (3, tag)
         tag = occ.add_cylinder(0.0, -d_feed, -0.5 * d, 0.0, 0.0, d, r_feed)
@@ -100,7 +97,7 @@ class Mspa(object):
         # tag = occ.add_box(-0.5 * w_path + w0, -0.5 * l1, -0.5 * d, l0, l1, d)
         # vol_2 = (3, tag)
 
-        tags, _ = occ.cut([vol_patch], [vol_cyl1, vol_cyl2, vol_cyl3, vol_shield, vol_feed],
+        tags, _ = occ.cut([vol_patch], [vol_cyl1, vol_cyl2, vol_shield, vol_feed],
                           tag=0, removeObject=True, removeTool=True)
         vol_patch = tags[0]
 
@@ -124,22 +121,19 @@ class Mspa(object):
         tags, _ = occ.cut([vol_substrate], [vol_patch],
                           tag=0, removeObject=True, removeTool=False)
         vol_substrate1 = tags[0]
-        vol_substrate2 = tags[2]
-        # vol_substrate2 = tags[1]
+        vol_substrate2 = tags[1]
 
         occ.synchronize()
         occ.removeAllDuplicates()
 
-        self.tags['sur_feed'] = (2, 44)
-        self.tags['sur_conductor'] = [38, 28, 42, 24, 26, 43, 23, 22, 33]
-        # self.tags['sur_feed'] = (2, 36)
-        # self.tags['sur_conductor'] = [19, 20, 21, 25, 23, 34]
+        self.tags['sur_feed'] = (2, 36)
+        self.tags['sur_conductor'] = [19, 20, 21, 25, 23, 34, 35]
 
         self.tags['sur_pml'] = sur_pml
         self.tags['vol_air'] = vol_air
         self.tags['vol_pml'] = vol_pml
         self.tags['vol_substrate'] = [vol_patch[1],
-                                      vol_substrate1[1], vol_substrate2[1], 14]
+                                      vol_substrate1[1], vol_substrate2[1]]
 
     def _set_mesh_settings(self):
         gmsh.option.setNumber('General.Antialiasing', 1)
