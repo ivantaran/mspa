@@ -82,7 +82,7 @@ class Mspa(object):
                                l_patch, -0.5 * d, 0.0, 0.0, d, r_cut)
         vol_cyl2 = (3, tag)
 
-        tag = occ.add_cylinder(0.0, 0.0, -0.5 * d, 0.0, 0.0, d, r_cut/2)
+        tag = occ.add_cylinder(0.0, 0.0, -0.5 * d, 0.0, 0.0, d, 0.2)
         vol_cyl3 = (3, tag)
 
         tag = occ.add_cylinder(0.0, -d_feed, -0.5 * d, 0.0, 0.0, d, r_feed)
@@ -131,7 +131,7 @@ class Mspa(object):
         occ.removeAllDuplicates()
 
         self.tags['sur_feed'] = (2, 44)
-        self.tags['sur_conductor'] = [38, 28, 42, 24, 26, 43, 23, 22, 33]
+        self.tags['sur_conductor'] = [38, 28, 42, 24, 26, 43, 23, 22]
         # self.tags['sur_feed'] = (2, 36)
         # self.tags['sur_conductor'] = [19, 20, 21, 25, 23, 34]
 

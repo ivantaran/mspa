@@ -189,7 +189,7 @@ fvar = {}
 fvar['mu0'] = mu_0
 fvar['nu0'] = 1.0 / mu_0
 fvar['ep0'] = epsilon_0
-fvar['epr'] = 1.1  # 1.5  # Dielectric constant for FR4 is ~4.5
+fvar['epr'] = 1.5  # 1.5  # Dielectric constant for FR4 is ~4.5
 # fvar['freq'] = freq
 # fvar['k0'] = 2.0 * pi * freq / speed_of_light
 
@@ -384,9 +384,9 @@ pro.write_file()
 gmsh.open(pro.filename)
 gmsh.model.set_current(MODEL_NAME)
 
-# gmsh.model.mesh.generate(3)
-# gmsh.write(f'{MODEL_NAME}.msh')
-# gmsh.onelab.run()
+gmsh.model.mesh.generate(3)
+gmsh.write(f'{MODEL_NAME}.msh')
+gmsh.onelab.run()
 
 # d = np.loadtxt('/home/taran/work/gmsh/mspa/build/e_linez.txt')
 # v1 = np.vectorize(complex)(d[:, 3], d[:, 4])
