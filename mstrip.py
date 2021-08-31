@@ -71,9 +71,9 @@ def setup_onelab():
             {
                 "type": "number",
                 "name": "Model/Frequency",
-                "values": [141.0],
+                "values": [164.0],
                 "min": 130.0,
-                "max": 180.0,
+                "max": 141.0,
                 "step": 10.0,
                 "index": 0,
                 "clients": {"Gmsh": 0}
@@ -107,7 +107,7 @@ def setup_onelab():
                 "type": "number",
                 "name": "Model/FeedDistance",
                 "label": "Feed Distance",
-                "values": [270.0],
+                "values": [170.0],
                 "min": 50.0,
                 "max": 400.0,
                 "step": 10.0,
@@ -189,7 +189,7 @@ fvar = {}
 fvar['mu0'] = mu_0
 fvar['nu0'] = 1.0 / mu_0
 fvar['ep0'] = epsilon_0
-fvar['epr'] = 1.5  # 1.5  # Dielectric constant for FR4 is ~4.5
+fvar['epr'] = 1.3  # 1.5  # Dielectric constant for FR4 is ~4.5
 # fvar['freq'] = freq
 # fvar['k0'] = 2.0 * pi * freq / speed_of_light
 
