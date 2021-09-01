@@ -71,7 +71,7 @@ def setup_onelab():
             {
                 "type": "number",
                 "name": "Model/Frequency",
-                "values": [141.0],
+                "values": [124.0],
                 "min": 130.0,
                 "max": 141.0,
                 "step": 10.0,
@@ -107,7 +107,7 @@ def setup_onelab():
                 "type": "number",
                 "name": "Model/FeedDistance",
                 "label": "Feed Distance",
-                "values": [270.0],
+                "values": [120.0],
                 "min": 50.0,
                 "max": 400.0,
                 "step": 10.0,
@@ -117,9 +117,9 @@ def setup_onelab():
                 "type": "number",
                 "name": "Model/PatchSize",
                 "label": "PatchSize",
-                "values": [825.0],
+                "values": [690.0],
                 "min": 600.0,
-                "max": 900.0,
+                "max": 825.0,
                 "step": 10.0,
                 "index": 4,
                 "clients": {"Gmsh": 0}
@@ -403,18 +403,18 @@ gmsh.onelab.run()
 # pyplot.show()
 
 # result = []
-# for s in np.arange(895.0, 945.0, 10.0):
+# for s in np.arange(370.0, 50.0, -50.0):
 #     # gmsh.onelab.set_number('Model/CutRadius', [s])
-#     # gmsh.onelab.set_number('Model/FeedDistance', [s])
+#     gmsh.onelab.set_number('Model/FeedDistance', [s])
 #     # gmsh.onelab.set_number('Model/Frequency', [s])
-#     gmsh.onelab.set_number('Model/PatchSize', [s])
+#     # gmsh.onelab.set_number('Model/PatchSize', [s])
 #     model.refresh()
 #     gmsh.model.mesh.generate(3)
 #     gmsh.write(f'{MODEL_NAME}.msh')
 #     gmsh.model.set_current(MODEL_NAME)
 #     gmsh.onelab.run()
 #     s11 = gmsh.onelab.get_number('s11')[0]
-#     size = gmsh.onelab.get_number('Model/PatchSize')[0]
+#     size = gmsh.onelab.get_number('Model/FeedDistance')[0]
 #     freq = gmsh.onelab.get_number('Model/Frequency')[0]
 #     result.append([freq, size, s11])
 #     # d = np.loadtxt('/home/taran/work/gmsh/mspa/build/e_linez.txt')
