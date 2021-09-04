@@ -131,7 +131,7 @@ class Mspa(object):
         occ.removeAllDuplicates()
 
         self.tags['sur_feed'] = (2, 52)
-        self.tags['sur_conductor'] = [19, 20, 21, 23, 25, 51]
+        self.tags['sur_conductor'] = [19, 20, 21, 23, 25, 50, 51]
 
         self.tags['sur_pml'] = sur_pml
         self.tags['vol_air'] = vol_air
@@ -192,8 +192,6 @@ class Mspa(object):
         tags = gmsh.model.getBoundary(tags, False, False, False)
         a = np.array(tags)
         a = list(np.unique(a[:, 1]))
-        # b = [43, 31, 33, 50, 32, 54]
-        # c = [v for v in a if v not in b]
 
         gmsh.model.mesh.field.add("Distance", 1)
         gmsh.model.mesh.field.setNumbers(1, "CurvesList", a)
