@@ -5,6 +5,7 @@ freq = GetNumber["Model/Frequency"];
 freq = freq * mhz;
 lambda = speed_of_ligth / freq;
 k0 = 2.0 * Pi / lambda;
+epr = GetNumber["Model/epr"];
 
 SetNumber["Model/Lambda", lambda];
 SetNumber["Model/WaveNumber", k0];

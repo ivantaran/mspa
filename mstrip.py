@@ -50,14 +50,14 @@ def _setup_planes():
     p.setNumber(name, 'A', 0.0)
     p.setNumber(name, 'B', 0.0)
     p.setNumber(name, 'C', 1.0)
-    p.setNumber(name, 'D', 0.0)
+    p.setNumber(name, 'D', -0.0145)
     p.setNumber(name, 'View', 0)
     p.run(name)
-    name = 'ModulusPhase'
-    p.setNumber(name, 'RealPart', 0)
-    p.setNumber(name, 'ImaginaryPart', 1)
-    p.setNumber(name, 'View', 2)
-    p.run(name)
+    # name = 'ModulusPhase'
+    # p.setNumber(name, 'RealPart', 0)
+    # p.setNumber(name, 'ImaginaryPart', 1)
+    # p.setNumber(name, 'View', 2)
+    # p.run(name)
     gmsh.option.setString('View[2].Name', 'e_amp')
     # gmsh.option.setNumber('View[2].ScaleType', 2)
     gmsh.option.setNumber('View[2].ForceNumComponents', 9)
@@ -71,10 +71,20 @@ def setup_onelab():
             {
                 "type": "number",
                 "name": "Model/Frequency",
-                "values": [139.0],
+                "values": [140.0],
                 "min": 130.0,
                 "max": 141.0,
                 "step": 10.0,
+                "index": 0,
+                "clients": {"Gmsh": 0}
+            },
+            {
+                "type": "number",
+                "name": "Model/epr",
+                "values": [1.1],
+                "min": 1.0,
+                "max": 1.5,
+                "step": 0.1,
                 "index": 0,
                 "clients": {"Gmsh": 0}
             },
@@ -97,8 +107,8 @@ def setup_onelab():
                 "type": "number",
                 "name": "Model/CutRadius",
                 "label": "Cut Radius",
-                "values": [1.0],
-                "min": 10.0,
+                "values": [77.0],
+                "min": 77.0,
                 "max": 170.0,
                 "step": 10.0,
                 "clients": {"GetDP": 1}
@@ -117,7 +127,7 @@ def setup_onelab():
                 "type": "number",
                 "name": "Model/PatchSize",
                 "label": "PatchSize",
-                "values": [670.0],
+                "values": [825.0],
                 "min": 600.0,
                 "max": 825.0,
                 "step": 10.0,
@@ -146,10 +156,10 @@ def _setup_plugins(r, wavenumber):
     name = 'NearToFarField'
     p.setNumber(name, 'Wavenumber', wavenumber)
     p.setNumber(name, 'RFar', 1)
-    p.setNumber(name, 'NumPointsPhi', 30)  # 50
-    p.setNumber(name, 'NumPointsTheta', 15)  # 25
-    p.setNumber(name, 'EView', 2)
-    p.setNumber(name, 'HView', 3)
+    p.setNumber(name, 'NumPointsPhi', 60)  # 50
+    p.setNumber(name, 'NumPointsTheta', 30)  # 25
+    p.setNumber(name, 'EView', 3)
+    p.setNumber(name, 'HView', 4)
     p.setNumber(name, 'Normalize', 0)
     p.setNumber(name, 'dB', 1)
     p.run(name)
@@ -181,7 +191,7 @@ fvar = {}
 fvar['mu0'] = mu_0
 fvar['nu0'] = 1.0 / mu_0
 fvar['ep0'] = epsilon_0
-fvar['epr'] = 1.5  # 1.5  # Dielectric constant for FR4 is ~4.5
+# fvar['epr'] = 1.5  # 1.5  # Dielectric constant for FR4 is ~4.5
 # fvar['freq'] = freq
 # fvar['k0'] = 2.0 * pi * freq / speed_of_light
 
@@ -228,13 +238,13 @@ f.add('tens', f.TensorDiag('cy[] * cz[] / cx[]',
 f.add('epsilon', 'ep0 * tens[]', region='Pml')
 f.add('nu', 'nu0 / tens[]', region='Pml')
 
-y_feed = model.dims['d_feed'] - 0.5 * model.dims['w_path']
+y_feed = model.dims['d_feed']  # - 0.5 * model.dims['w_path']
 f.constant('y_feed', y_feed)
 
 f.add('r_xy', f.Sqrt('X[]^2 + (Y[] + y_feed)^2'))
 f.add('BC_Fct_e', f.Vector('X[] / r_xy[] / gap',
       '(Y[] + y_feed) / r_xy[] / gap', 0.0))
-# f.add('BC_Fct_e', f.Vector(0.0, 0.0, 1.0 / gap))
+
 f.add('dr', f.Vector('-(Y[] + y_feed) / r_xy[] / gap',
       'X[] / r_xy[] / gap', 0.0), region=['SkinFeed'])
 
@@ -367,9 +377,9 @@ pro.write_file()
 gmsh.open(pro.filename)
 gmsh.model.set_current(MODEL_NAME)
 
-# gmsh.model.mesh.generate(3)
-# gmsh.write(f'{MODEL_NAME}.msh')
-# gmsh.onelab.run()
+gmsh.model.mesh.generate(3)
+gmsh.write(f'{MODEL_NAME}.msh')
+gmsh.onelab.run()
 
 # d = np.loadtxt('/home/taran/work/gmsh/mspa/build/e_linez.txt')
 # v1 = np.vectorize(complex)(d[:, 3], d[:, 4])
@@ -385,47 +395,47 @@ gmsh.model.set_current(MODEL_NAME)
 # pyplot.grid()
 # pyplot.show()
 
-result = []
-for s in np.arange(330.0, 150.0, -10.0):
-    # gmsh.onelab.set_number('Model/CutRadius', [s])
-    gmsh.onelab.set_number('Model/FeedDistance', [s])
-    # gmsh.onelab.set_number('Model/Frequency', [s])
-    # gmsh.onelab.set_number('Model/PatchSize', [s])
-    model.refresh()
-    gmsh.model.mesh.generate(3)
-    gmsh.write(f'{MODEL_NAME}.msh')
-    gmsh.model.set_current(MODEL_NAME)
-    gmsh.onelab.run()
-    s11 = gmsh.onelab.get_number('s11')[0]
-    size = gmsh.onelab.get_number('Model/FeedDistance')[0]
-    freq = gmsh.onelab.get_number('Model/Frequency')[0]
-    result.append([freq, size, s11])
-    # d = np.loadtxt('/home/taran/work/gmsh/mspa/build/e_linez.txt')
-    # np.savetxt(f'/home/taran/work/gmsh/mspa/build/e_linez_{int(s):03d}.txt', d)
-    # v1 = np.vectorize(complex)(d[:, 3], d[:, 4])
-    # v2 = np.vectorize(complex)(d[:, 6], d[:, 7])
-    # angle = np.degrees(np.angle(-v1 * v2))
-    # v1 = np.vectorize(complex)(d[:, 3], d[:, 4])
-    # v2 = np.vectorize(complex)(d[:, 6], d[:, 7])
-    # v = -v1 * v2
-    # angle = np.degrees(np.angle(v2) - np.angle(v1))
-    # angle[angle < 0.0] += 360.0
-    # pyplot.plot(angle, 'o-')
-    # pyplot.grid()
-    # pyplot.savefig(f'v1v2_{int(s):03d}.png')
-    # pyplot.cla()
-    # pyplot.clf()
-    # pyplot.plot(v, 'o-')
-    # pyplot.grid()
-    # pyplot.savefig(f'v_{int(s):03d}.png')
-    # pyplot.cla()
-    # pyplot.clf()
-    # result.append((size, angle))
-pprint(result)
-gmsh.finalize()
-exit(0)
+# result = []
+# for s in np.arange(200.0, 130.0, -5.0):
+#     # gmsh.onelab.set_number('Model/CutRadius', [s])
+#     # gmsh.onelab.set_number('Model/FeedDistance', [s])
+#     gmsh.onelab.set_number('Model/Frequency', [s])
+#     # gmsh.onelab.set_number('Model/PatchSize', [s])
+#     model.refresh()
+#     gmsh.model.mesh.generate(3)
+#     gmsh.write(f'{MODEL_NAME}.msh')
+#     gmsh.model.set_current(MODEL_NAME)
+#     gmsh.onelab.run()
+#     s11 = gmsh.onelab.get_number('s11')[0]
+#     size = gmsh.onelab.get_number('Model/FeedDistance')[0]
+#     freq = gmsh.onelab.get_number('Model/Frequency')[0]
+#     result.append([freq, size, s11])
+#     # d = np.loadtxt('/home/taran/work/gmsh/mspa/build/e_linez.txt')
+#     # np.savetxt(f'/home/taran/work/gmsh/mspa/build/e_linez_{int(s):03d}.txt', d)
+#     # v1 = np.vectorize(complex)(d[:, 3], d[:, 4])
+#     # v2 = np.vectorize(complex)(d[:, 6], d[:, 7])
+#     # angle = np.degrees(np.angle(-v1 * v2))
+#     # v1 = np.vectorize(complex)(d[:, 3], d[:, 4])
+#     # v2 = np.vectorize(complex)(d[:, 6], d[:, 7])
+#     # v = -v1 * v2
+#     # angle = np.degrees(np.angle(v2) - np.angle(v1))
+#     # angle[angle < 0.0] += 360.0
+#     # pyplot.plot(angle, 'o-')
+#     # pyplot.grid()
+#     # pyplot.savefig(f'v1v2_{int(s):03d}.png')
+#     # pyplot.cla()
+#     # pyplot.clf()
+#     # pyplot.plot(v, 'o-')
+#     # pyplot.grid()
+#     # pyplot.savefig(f'v_{int(s):03d}.png')
+#     # pyplot.cla()
+#     # pyplot.clf()
+#     # result.append((size, angle))
+# pprint(result)
+# gmsh.finalize()
+# exit(0)
 
-# _setup_planes()
+_setup_planes()
 
 # minimal_box = True
 # if minimal_box:

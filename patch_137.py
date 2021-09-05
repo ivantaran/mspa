@@ -24,17 +24,17 @@ class Mspa(object):
         r_cut = gmsh.onelab.get_number('Model/CutRadius')[0]
         size = gmsh.onelab.get_number('Model/PatchSize')[0]
         d_feed = gmsh.onelab.get_number('Model/FeedDistance')[0]
-        # 200.0 * mm  # 240 * mm
+
         r_cut *= mm
         size *= mm
         d_feed *= mm
         d = 29.0 * mm
-        w_path = size  # 640 791.0 * mm
+        w_path = size
         l_patch = size
         w_sub = 1170.0 * mm
         l_sub = 1170.0 * mm
-        r_feed = 1.6 * mm
-        r_shield = 4.0 * mm
+        r_feed = 0.40 * mm
+        r_shield = 1.1 * mm
 
         self.dims['d'] = d
         self.dims['gap'] = r_shield - r_feed
@@ -89,9 +89,9 @@ class Mspa(object):
         tag = occ.add_cylinder(0.0, -d_feed, -0.5 * d, 0.0, 0.0, d, r_shield)
         vol_shield = (3, tag)
 
-        w0 = 0.05
-        l0 = 0.03
-        l1 = 0.40
+        w0 = 0.05  # 0.05
+        l0 = 0.03  # 0.03
+        l1 = 0.40  # 0.40
         tag = occ.add_box(-0.5 * w_path, -0.5 * l0, -0.5 * d, w0, l0, d)
         vol_1 = (3, tag)
         tag = occ.add_box(-0.5 * w_path + w0, -0.5 * l1, -0.5 * d, l0, l1, d)
@@ -205,8 +205,8 @@ class Mspa(object):
         gmsh.model.mesh.field.setNumber(2, "DistMax", 0.20)
 
         gmsh.model.mesh.field.add("Cylinder", 3)
-        gmsh.model.mesh.field.setNumber(3, "Radius", 0.006)
-        gmsh.model.mesh.field.setNumber(3, "VIn", 0.001)
+        gmsh.model.mesh.field.setNumber(3, "Radius", 0.0011)
+        gmsh.model.mesh.field.setNumber(3, "VIn", 0.0005)
         gmsh.model.mesh.field.setNumber(3, "VOut", 0.30)
         gmsh.model.mesh.field.setNumber(3, "XAxis", 0.00)
         gmsh.model.mesh.field.setNumber(3, "XCenter", 0.00)
