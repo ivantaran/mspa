@@ -72,7 +72,7 @@ def setup_onelab():
                 "type": "number",
                 "name": "Model/Frequency",
                 "values": [140.0],
-                "min": 130.0,
+                "min": 140.0,
                 "max": 141.0,
                 "step": 10.0,
                 "index": 0,
@@ -81,7 +81,7 @@ def setup_onelab():
             {
                 "type": "number",
                 "name": "Model/epr",
-                "values": [1.1],
+                "values": [1.05],
                 "min": 1.0,
                 "max": 1.5,
                 "step": 0.1,
@@ -107,7 +107,7 @@ def setup_onelab():
                 "type": "number",
                 "name": "Model/CutRadius",
                 "label": "Cut Radius",
-                "values": [77.0],
+                "values": [1.0],
                 "min": 77.0,
                 "max": 170.0,
                 "step": 10.0,
@@ -127,7 +127,7 @@ def setup_onelab():
                 "type": "number",
                 "name": "Model/PatchSize",
                 "label": "PatchSize",
-                "values": [825.0],
+                "values": [850.0],
                 "min": 600.0,
                 "max": 825.0,
                 "step": 10.0,
@@ -396,10 +396,10 @@ gmsh.onelab.run()
 # pyplot.show()
 
 # result = []
-# for s in np.arange(200.0, 130.0, -5.0):
+# for s in np.arange(110.0, 200.0, 10.0):
 #     # gmsh.onelab.set_number('Model/CutRadius', [s])
-#     # gmsh.onelab.set_number('Model/FeedDistance', [s])
-#     gmsh.onelab.set_number('Model/Frequency', [s])
+#     gmsh.onelab.set_number('Model/FeedDistance', [s])
+#     # gmsh.onelab.set_number('Model/Frequency', [s])
 #     # gmsh.onelab.set_number('Model/PatchSize', [s])
 #     model.refresh()
 #     gmsh.model.mesh.generate(3)
