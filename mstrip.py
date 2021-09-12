@@ -71,8 +71,8 @@ def setup_onelab():
             {
                 "type": "number",
                 "name": "Model/Frequency",
-                "values": [140.0],
-                "min": 140.0,
+                "values": [138.5],
+                "min": 141.5,
                 "max": 141.0,
                 "step": 10.0,
                 "index": 0,
@@ -109,7 +109,7 @@ def setup_onelab():
                 "label": "Cut Radius",
                 "values": [1.0],
                 "min": 77.0,
-                "max": 170.0,
+                "max": 220.0,
                 "step": 10.0,
                 "clients": {"GetDP": 1}
             },
@@ -241,12 +241,19 @@ f.add('nu', 'nu0 / tens[]', region='Pml')
 y_feed = model.dims['d_feed']  # - 0.5 * model.dims['w_path']
 f.constant('y_feed', y_feed)
 
-f.add('r_xy', f.Sqrt('X[]^2 + (Y[] + y_feed)^2'))
-f.add('BC_Fct_e', f.Vector('X[] / r_xy[] / gap',
+# f.add('r_xy', f.Sqrt('X[]^2 + (Y[] + y_feed)^2'))
+# f.add('BC_Fct_e', f.Vector('X[] / r_xy[] / gap',
+#       '(Y[] + y_feed) / r_xy[] / gap', 0.0))
+
+# f.add('dr', f.Vector('-(Y[] + y_feed) / r_xy[] / gap',
+#       'X[] / r_xy[] / gap', 0.0), region=['SkinFeed'])
+
+f.add('r_xy', f.Sqrt('(X[] + y_feed)^2 + (Y[] + y_feed)^2'))
+f.add('BC_Fct_e', f.Vector('(X[] + y_feed) / r_xy[] / gap',
       '(Y[] + y_feed) / r_xy[] / gap', 0.0))
 
 f.add('dr', f.Vector('-(Y[] + y_feed) / r_xy[] / gap',
-      'X[] / r_xy[] / gap', 0.0), region=['SkinFeed'])
+      '(X[] + y_feed) / r_xy[] / gap', 0.0), region=['SkinFeed'])
 
 constr = pro.constraint
 ef = constr.add('ElectricField')
@@ -363,8 +370,10 @@ poi = po.add('Microwave_e', 'Microwave_e')
 poi0 = poi.add()
 poi0.add('e', OnElementsOf='Region[{Domain}]', File='./build/e.pos')  # , -Pml
 poi0.add('h', OnElementsOf='Region[{Domain}]', File='./build/h.pos')  # , -Pml
-# poi0.add('e', OnLine='{{0.0, 0.0, 0.2} {0.0, 0.0, 1.2}} {100}',
+# poi0.add('e', OnLine='{{0.0, 0.0, 0.02} {0.0, 0.0, 1.1}} {100}',
 #          File='./build/e_linez.pos')
+# poi0.add('h', OnLine='{{0.0, 0.0, 0.02} {0.0, 0.0, 1.1}} {100}',
+#          File='./build/h_linez.pos')
 # poi0.add('e', OnLine='{{0.0, 0.0, 0.2} {0.0, 0.0, 1.2}} {100}', Format='SimpleTable',
 #          File='./build/e_linez.txt')
 poi0.add('y[SkinFeed]', OnGlobal='', Format='FrequencyTable',
@@ -380,6 +389,8 @@ gmsh.model.set_current(MODEL_NAME)
 gmsh.model.mesh.generate(3)
 gmsh.write(f'{MODEL_NAME}.msh')
 gmsh.onelab.run()
+_setup_planes()
+_setup_plugins(1.1, gmsh.onelab.get_number('Model/WaveNumber')[0])
 
 # d = np.loadtxt('/home/taran/work/gmsh/mspa/build/e_linez.txt')
 # v1 = np.vectorize(complex)(d[:, 3], d[:, 4])
@@ -396,7 +407,7 @@ gmsh.onelab.run()
 # pyplot.show()
 
 # result = []
-# for s in np.arange(110.0, 200.0, 10.0):
+# for s in np.arange(90.0, 200.0, 10.0):
 #     # gmsh.onelab.set_number('Model/CutRadius', [s])
 #     gmsh.onelab.set_number('Model/FeedDistance', [s])
 #     # gmsh.onelab.set_number('Model/Frequency', [s])
@@ -434,22 +445,6 @@ gmsh.onelab.run()
 # pprint(result)
 # gmsh.finalize()
 # exit(0)
-
-_setup_planes()
-
-# minimal_box = True
-# if minimal_box:
-#     box = gmsh.model.occ.getBoundingBox(
-#         *model.tags['vol_substrate'])  # sur_patch, vol_substrate, vol_patch
-# else:
-#     airbox = gmsh.model.occ.getBoundingBox(*model.tags['vol_patch'])
-#     box = [0.0] * 6
-#     eps = 1.0e-3
-#     for i in range(6):
-#         box[i] = airbox[i]
-#     box[2] = -eps * 10.0
-#     box[5] = +eps * 10.0
-_setup_plugins(1.1, gmsh.onelab.get_number('Model/WaveNumber')[0])
 
 
 # def check_event():

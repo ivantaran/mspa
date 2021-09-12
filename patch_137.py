@@ -82,23 +82,40 @@ class Mspa(object):
                                l_patch, -0.5 * d, 0.0, 0.0, d, r_cut)
         vol_cyl2 = (3, tag)
 
-        tag = occ.add_cylinder(0.0, -d_feed, -0.5 * d, 0.0, 0.0, d, r_feed)
+        # tag = occ.add_cylinder(0.0, -d_feed, -0.5 * d, 0.0, 0.0, d, r_feed)
+        # vol_feed = (3, tag)
+        # tag = occ.add_cylinder(0.0, -d_feed, -0.5 * d, 0.0, 0.0, d, r_feed)
+        # vol_feed = (3, tag)
+        # tag = occ.add_cylinder(0.0, -d_feed, -0.5 * d, 0.0, 0.0, d, r_shield)
+        # vol_shield = (3, tag)
+
+        tag = occ.add_cylinder(-d_feed, -d_feed, -0.5 * d, 0.0, 0.0, d, r_feed)
         vol_feed = (3, tag)
-        tag = occ.add_cylinder(0.0, -d_feed, -0.5 * d, 0.0, 0.0, d, r_feed)
+        tag = occ.add_cylinder(-d_feed, -d_feed, -0.5 * d, 0.0, 0.0, d, r_feed)
         vol_feed = (3, tag)
-        tag = occ.add_cylinder(0.0, -d_feed, -0.5 * d, 0.0, 0.0, d, r_shield)
+        tag = occ.add_cylinder(-d_feed, -d_feed, -0.5 *
+                               d, 0.0, 0.0, d, r_shield)
         vol_shield = (3, tag)
 
         w0 = 0.05  # 0.05
         l0 = 0.03  # 0.03
         l1 = 0.40  # 0.40
+        l2 = 0.00  # 0.80
         tag = occ.add_box(-0.5 * w_path, -0.5 * l0, -0.5 * d, w0, l0, d)
         vol_1 = (3, tag)
-        tag = occ.add_box(-0.5 * w_path + w0, -0.5 * l1, -0.5 * d, l0, l1, d)
+        tag = occ.add_box(
+            -0.5 * w_path + w0,
+            -0.5 * l1 - l2,
+            -0.5 * d, l0,
+            l1 + l2, d)
         vol_2 = (3, tag)
         tag = occ.add_box(0.5 * w_path, -0.5 * l0, -0.5 * d, -w0, l0, d)
         vol_3 = (3, tag)
-        tag = occ.add_box(0.5 * w_path - w0, -0.5 * l1, -0.5 * d, -l0, l1, d)
+        tag = occ.add_box(
+            0.5 * w_path - w0,
+            -0.5 * l1,
+            -0.5 * d, -l0,
+            l1 + l2, d)
         vol_4 = (3, tag)
 
         tags, _ = occ.cut([vol_patch], [vol_cyl1, vol_cyl2, vol_shield, vol_feed, vol_1, vol_2, vol_3, vol_4],
@@ -209,7 +226,8 @@ class Mspa(object):
         gmsh.model.mesh.field.setNumber(3, "VIn", 0.0005)
         gmsh.model.mesh.field.setNumber(3, "VOut", 0.30)
         gmsh.model.mesh.field.setNumber(3, "XAxis", 0.00)
-        gmsh.model.mesh.field.setNumber(3, "XCenter", 0.00)
+        gmsh.model.mesh.field.setNumber(3, "XCenter", -d_feed)
+        # gmsh.model.mesh.field.setNumber(3, "XCenter", 0.00)
         gmsh.model.mesh.field.setNumber(3, "YAxis", 0.00)
         gmsh.model.mesh.field.setNumber(3, "YCenter", -d_feed)
         gmsh.model.mesh.field.setNumber(3, "ZAxis", d)
