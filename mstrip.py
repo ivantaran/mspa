@@ -17,6 +17,18 @@ import os
 import sys
 
 
+# GDICT1 = {
+#     'Point': 1,
+#     'Line': 2,
+#     'Triangle': 3,
+#     'Quadrangle': 4,
+#     'Tetrahedron': 4,
+#     'Hexahedron': 8,
+#     'Prism': 6,
+# }
+
+# GDICT2 = GDICT1
+
 GDICT1 = {
     'Point': 1,
     'Line': 3,
@@ -36,6 +48,7 @@ GDICT2 = {
     'Hexahedron': 34,
     'Prism': 21,
 }
+
 
 MODEL_NAME = 'mspa'
 
@@ -326,6 +339,9 @@ quantity.add(Name='h', Type='Local',
              Value='I[] * nu[] * {d e} / (2.0 * Pi * freq)',
              In='Domain', Jacobian='JVol')
 
+# quantity.add(Name='e_norm', Type='Local',
+#              Value='Norm[{e}]',
+#              In='Domain', Jacobian='JVol')
 # admittance
 quantity.add(Name='y', Type='Integral',
              Value='{h} * dr[]', In='SkinFeed',
@@ -344,6 +360,8 @@ poi0.add('h', OnElementsOf='Region[{Domain}]', File='./build/h.pos')  # , -Pml
 #          File='./build/h_linez.pos')
 # poi0.add('e', OnLine='{{0.0, 0.0, 0.2} {0.0, 0.0, 1.2}} {100}', Format='SimpleTable',
 #          File='./build/e_linez.txt')
+# poi0.add(
+#     'e', OnSection='{{0.0, 0.0, 0.0} {1.0, 0.0, 0.0} {0.0, 1.0, 0.0}}', File='./build/e_norm.pos')
 poi0.add('y[SkinFeed]', OnGlobal='', Format='FrequencyTable',
          StoreInVariable='$y', File='./build/y.txt')
 poi0.add('s11', OnRegion='SkinFeed', Format='FrequencyTable',
