@@ -1,5 +1,9 @@
 
 # from comsol_patch_1575 import Mspa
+from gmsh import model
+from gmsh import onelab
+from gmsh import option
+from gmsh import plugin
 from matplotlib import pyplot
 from numpy.lib.type_check import imag
 from patch_137 import Mspa
@@ -11,6 +15,7 @@ import gmsh
 import numpy as np
 import os
 import sys
+
 
 GDICT1 = {
     'Point': 1,
@@ -44,34 +49,33 @@ def add_integration(integration, name, group_dict, itype='Gauss'):
         ici.add(GeoElement=element, NumberOfPoints=value)
 
 
-def _setup_planes():
-    p = gmsh.plugin
+def setup_planes():
     name = 'CutPlane'
-    p.set_number(name, 'A', 0.0)
-    p.set_number(name, 'B', 0.0)
-    p.set_number(name, 'C', 1.0)
-    p.set_number(name, 'D', -0.0145)
-    p.set_number(name, 'View', 0)
-    p.run(name)
+    plugin.set_number(name, 'A', 0.0)
+    plugin.set_number(name, 'B', 0.0)
+    plugin.set_number(name, 'C', 1.0)
+    plugin.set_number(name, 'D', -0.0145)
+    plugin.set_number(name, 'View', 0)
+    plugin.run(name)
     # name = 'ModulusPhase'
-    # p.set_number(name, 'RealPart', 0)
-    # p.set_number(name, 'ImaginaryPart', 1)
-    # p.set_number(name, 'View', 2)
-    # p.run(name)
-    gmsh.option.setString('View[2].Name', 'e_amp')
-    # gmsh.option.set_number('View[2].ScaleType', 2)
-    gmsh.option.set_number('View[2].ForceNumComponents', 9)
+    # plugin.set_number(name, 'RealPart', 0)
+    # plugin.set_number(name, 'ImaginaryPart', 1)
+    # plugin.set_number(name, 'View', 2)
+    # plugin.run(name)
+    option.set_string('View[2].Name', 'e_amp')
+    # option.set_number('View[2].ScaleType', 2)
+    option.set_number('View[2].ForceNumComponents', 9)
 
 
 def setup_onelab():
     gmsh.initialize()
-    gmsh.onelab.set(
+    onelab.set(
         """
         [
             {
                 "type": "number",
                 "name": "Model/Frequency",
-                "values": [137.5],
+                "values": [137.1],
                 "min": 141.5,
                 "max": 141.0,
                 "step": 10.0,
@@ -102,70 +106,47 @@ def setup_onelab():
                 "readOnly": true,
                 "index": 2,
                 "clients": {"Gmsh": 0}
-            },
-            {
-                "type": "number",
-                "name": "Model/CutRadius",
-                "label": "Cut Radius",
-                "values": [1.0],
-                "min": 77.0,
-                "max": 220.0,
-                "step": 10.0,
-                "clients": {"GetDP": 1}
-            },
-            {
-                "type": "number",
-                "name": "Model/PatchSize",
-                "label": "PatchSize",
-                "values": [850.0],
-                "min": 600.0,
-                "max": 825.0,
-                "step": 10.0,
-                "index": 4,
-                "clients": {"Gmsh": 0}
             }
         ]
         """
     )
 
 
-def _setup_plugins(r, wavenumber):
-    p = gmsh.plugin
-
+def setup_plugins(r, wavenumber):
     name = 'CutSphere'
-    p.set_number(name, 'Xc', 0.0)
-    p.set_number(name, 'Yc', 0.0)
-    p.set_number(name, 'Xc', 0.0)
-    p.set_number(name, 'R', r)
+    plugin.set_number(name, 'Xc', 0.0)
+    plugin.set_number(name, 'Yc', 0.0)
+    plugin.set_number(name, 'Xc', 0.0)
+    plugin.set_number(name, 'R', r)
 
-    p.set_number(name, 'View', 0)
-    p.run(name)
-    p.set_number(name, 'View', 1)
-    p.run(name)
+    plugin.set_number(name, 'View', 0)
+    plugin.run(name)
+    plugin.set_number(name, 'View', 1)
+    plugin.run(name)
 
     name = 'NearToFarField'
-    p.set_number(name, 'Wavenumber', wavenumber)
-    p.set_number(name, 'RFar', 1)
-    p.set_number(name, 'NumPointsPhi', 60)  # 50
-    p.set_number(name, 'NumPointsTheta', 30)  # 25
-    p.set_number(name, 'EView', 3)
-    p.set_number(name, 'HView', 4)
-    p.set_number(name, 'Normalize', 0)
-    p.set_number(name, 'dB', 1)
-    p.run(name)
+    plugin.set_number(name, 'Wavenumber', wavenumber)
+    plugin.set_number(name, 'RFar', 1)
+    plugin.set_number(name, 'NumPointsPhi', 60)  # 50
+    plugin.set_number(name, 'NumPointsTheta', 30)  # 25
+    plugin.set_number(name, 'EView', 3)
+    plugin.set_number(name, 'HView', 4)
+    plugin.set_number(name, 'Normalize', 0)
+    plugin.set_number(name, 'dB', 1)
+    plugin.run(name)
 
 
 setup_onelab()
-model = Mspa(MODEL_NAME)
+antenna = Mspa(MODEL_NAME)
 
 pro = Problem()
 pro.filename = MODEL_NAME + '.pro'
 pro.include('defines.pro')
 
-groups = gmsh.model.getPhysicalGroups()
+groups = model.get_physical_groups()
 for g in groups:
     tag = g[1]
-    name = gmsh.model.getPhysicalName(g[0], g[1])
+    name = model.get_physical_name(g[0], g[1])
     pro.group.add(name, tag)
 pro.group.Region('SurBC', 'SkinFeed')
 pro.group.Region(
@@ -182,10 +163,8 @@ fvar['mu0'] = mu_0
 fvar['nu0'] = 1.0 / mu_0
 fvar['ep0'] = epsilon_0
 # fvar['epr'] = 1.5  # 1.5  # Dielectric constant for FR4 is ~4.5
-# fvar['freq'] = freq
-# fvar['k0'] = 2.0 * pi * freq / speed_of_light
 
-box = gmsh.model.occ.getBoundingBox(*model.tags['vol_air'])
+box = model.occ.get_bounding_box(*antenna.tags['vol_air'])
 
 fvar['pml_xmax'] = box[3]
 fvar['pml_ymax'] = box[4]
@@ -194,12 +173,11 @@ fvar['pml_xmin'] = box[0]
 fvar['pml_ymin'] = box[1]
 fvar['pml_zmin'] = box[2]
 dc = 0.0  # 0.035e-3
-gap = model.dims['gap']
-fvar['gap'] = gap
+gap = antenna.dims['gap']
+fvar['gap'] = gap  # TODO refactor it
 fvar['pml_delta'] = 0.2
 fvar['air_boundary'] = 1.3
 fvar['zl'] = 50.0  # Ohm load resistance
-
 
 f = pro.function
 
@@ -228,7 +206,7 @@ f.add('tens', f.TensorDiag('cy[] * cz[] / cx[]',
 f.add('epsilon', 'ep0 * tens[]', region='Pml')
 f.add('nu', 'nu0 / tens[]', region='Pml')
 
-y_feed = model.dims['d_feed']  # - 0.5 * model.dims['w_path']
+y_feed = antenna.dims['d_feed']  # - 0.5 * antenna.dims['w_path']
 f.constant('y_feed', y_feed)
 
 # f.add('r_xy', f.Sqrt('X[]^2 + (Y[] + y_feed)^2'))
@@ -374,42 +352,27 @@ poi0.add('s11', OnRegion='SkinFeed', Format='FrequencyTable',
 pro.make_file()
 pro.write_file()
 gmsh.open(pro.filename)
-gmsh.model.set_current(MODEL_NAME)
+model.set_current(MODEL_NAME)
 
-gmsh.model.mesh.generate(3)
+model.mesh.generate(3)
 gmsh.write(f'{MODEL_NAME}.msh')
-gmsh.onelab.run()
-_setup_planes()
-_setup_plugins(1.1, gmsh.onelab.get_number('Model/WaveNumber')[0])
+onelab.run()
+setup_planes()
+setup_plugins(1.1, onelab.get_number('Model/WaveNumber')[0])
 
-# d = np.loadtxt('/home/taran/work/gmsh/mspa/build/e_linez.txt')
-# v1 = np.vectorize(complex)(d[:, 3], d[:, 4])
-# v2 = np.vectorize(complex)(d[:, 6], d[:, 7])
-# v = -v1 * v2
-# angle = np.degrees(np.angle(v2) - np.angle(v1))
-# angle[angle < 0.0] += 360.0
-# pyplot.plot(angle, 'o-')
-# pyplot.plot(np.real(v1), np.imag(v1), 'o-')
-# pyplot.plot(np.real(v2), np.imag(v2), 'o-')
-# pyplot.xlim([-5, 5])
-# pyplot.ylim([-5, 5])
-# pyplot.grid()
-# pyplot.show()
 
 # result = []
 # for s in np.arange(90.0, 200.0, 10.0):
-#     # gmsh.onelab.set_number('Model/CutRadius', [s])
-#     gmsh.onelab.set_number('Model/FeedDistance', [s])
-#     # gmsh.onelab.set_number('Model/Frequency', [s])
-#     # gmsh.onelab.set_number('Model/PatchSize', [s])
-#     model.refresh()
-#     gmsh.model.mesh.generate(3)
+#     # onelab.set_number('Model/Frequency', [s])
+#     # antenna.refresh()
+#     antenna.d_feed = s * 0.001
+#     model.mesh.generate(3)
 #     gmsh.write(f'{MODEL_NAME}.msh')
-#     gmsh.model.set_current(MODEL_NAME)
-#     gmsh.onelab.run()
-#     s11 = gmsh.onelab.get_number('s11')[0]
-#     size = gmsh.onelab.get_number('Model/FeedDistance')[0]
-#     freq = gmsh.onelab.get_number('Model/Frequency')[0]
+#     model.set_current(MODEL_NAME)
+#     onelab.run()
+#     s11 = onelab.get_number('s11')[0]
+#     size = onelab.get_number('Model/FeedDistance')[0]
+#     freq = onelab.get_number('Model/Frequency')[0]
 #     result.append([freq, size, s11])
 #     # d = np.loadtxt('/home/taran/work/gmsh/mspa/build/e_linez.txt')
 #     # np.savetxt(f'/home/taran/work/gmsh/mspa/build/e_linez_{int(s):03d}.txt', d)
@@ -438,17 +401,17 @@ _setup_plugins(1.1, gmsh.onelab.get_number('Model/WaveNumber')[0])
 
 
 # def check_event():
-#     action = gmsh.onelab.get_string('ONELAB/Action')
+#     action = onelab.get_string('ONELAB/Action')
 #     if len(action) == 0:
 #         pass
 #     elif action[0] == 'check':
-#         # gmsh.onelab.clear('ONELAB/Action')
+#         # onelab.clear('ONELAB/Action')
 #         # createGeometryAndMesh()
 #         gmsh.graphics.draw()
 #     elif action[0] == 'compute':
 #         print(f'{action[0]}')
-#         gmsh.onelab.run()
-#     gmsh.onelab.clear('ONELAB/Action')
+#         onelab.run()
+#     onelab.clear('ONELAB/Action')
 #     return True
 
 

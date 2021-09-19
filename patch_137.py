@@ -5,6 +5,9 @@ from gmsh import option
 import gmsh
 import numpy as np
 
+occ = model.occ
+field = model.mesh.field
+
 
 class Mspa(object):
     '''
@@ -76,12 +79,11 @@ class Mspa(object):
 
         model.add(self.name)
         self._create_antenna()
-        model.occ.synchronize()
+        occ.synchronize()
         self._set_mesh_settings()
         self._create_groups()
 
     def _create_antenna(self):
-        occ = model.occ
 
         d = self.dims['d']
         r_cut = self.dims['r_cut']
@@ -126,7 +128,7 @@ class Mspa(object):
 
         w0 = 0.05  # 0.05
         l0 = 0.03  # 0.03
-        l1 = 0.45  # 0.45
+        l1 = 0.44  # 0.45
         tag = occ.add_box(-0.5 * w_path, -0.5 * l0, -0.5 * d, w0, l0, d)
         vol_1 = (3, tag)
         tag = occ.add_box(
@@ -225,33 +227,33 @@ class Mspa(object):
         a = np.array(tags)
         a = list(np.unique(a[:, 1]))
 
-        model.mesh.field.add("Distance", 1)
-        model.mesh.field.set_numbers(1, "CurvesList", a)
-        model.mesh.field.set_number(1, "NumPointsPerCurve", 20)
+        field.add("Distance", 1)
+        field.set_numbers(1, "CurvesList", a)
+        field.set_number(1, "NumPointsPerCurve", 20)
 
-        model.mesh.field.add("Threshold", 2)
-        model.mesh.field.set_number(2, "InField", 1)
-        model.mesh.field.set_number(2, "SizeMin", 0.01)
-        model.mesh.field.set_number(2, "SizeMax", 0.20)
-        model.mesh.field.set_number(2, "DistMin", 0.00)
-        model.mesh.field.set_number(2, "DistMax", 0.20)
+        field.add("Threshold", 2)
+        field.set_number(2, "InField", 1)
+        field.set_number(2, "SizeMin", 0.01)
+        field.set_number(2, "SizeMax", 0.20)
+        field.set_number(2, "DistMin", 0.00)
+        field.set_number(2, "DistMax", 0.20)
 
-        model.mesh.field.add("Cylinder", 3)
-        model.mesh.field.set_number(3, "Radius", 0.0011)
-        model.mesh.field.set_number(3, "VIn", 0.0005)
-        model.mesh.field.set_number(3, "VOut", 0.30)
-        model.mesh.field.set_number(3, "XAxis", 0.00)
-        model.mesh.field.set_number(3, "XCenter", -d_feed)
-        # model.mesh.field.set_number(3, "XCenter", 0.00)
-        model.mesh.field.set_number(3, "YAxis", 0.00)
-        model.mesh.field.set_number(3, "YCenter", -d_feed)
-        model.mesh.field.set_number(3, "ZAxis", d)
-        model.mesh.field.set_number(3, "ZCenter", 0.00)
+        field.add("Cylinder", 3)
+        field.set_number(3, "Radius", 0.0011)
+        field.set_number(3, "VIn", 0.0005)
+        field.set_number(3, "VOut", 0.30)
+        field.set_number(3, "XAxis", 0.00)
+        field.set_number(3, "XCenter", -d_feed)
+        # field.set_number(3, "XCenter", 0.00)
+        field.set_number(3, "YAxis", 0.00)
+        field.set_number(3, "YCenter", -d_feed)
+        field.set_number(3, "ZAxis", d)
+        field.set_number(3, "ZCenter", 0.00)
 
-        model.mesh.field.add("Min", 4)
-        model.mesh.field.set_numbers(4, "FieldsList", [2, 3])
+        field.add("Min", 4)
+        field.set_numbers(4, "FieldsList", [2, 3])
 
-        model.mesh.field.set_as_background_mesh(4)
+        field.set_as_background_mesh(4)
 
     def _create_groups(self):
 
