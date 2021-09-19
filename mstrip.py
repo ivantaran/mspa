@@ -1,16 +1,16 @@
 
+# from comsol_patch_1575 import Mspa
+from matplotlib import pyplot
 from numpy.lib.type_check import imag
+from patch_137 import Mspa
+from pprint import pprint
 from pygetdp import Group, Function, Problem
 from pygetdp.helpers import build_example_png, print_html
 from scipy.constants import mu_0, epsilon_0, pi, speed_of_light
 import gmsh
-# from comsol_patch_1575 import Mspa
-from patch_137 import Mspa
 import numpy as np
 import os
 import sys
-from pprint import pprint
-from matplotlib import pyplot
 
 GDICT1 = {
     'Point': 1,
@@ -47,20 +47,20 @@ def add_integration(integration, name, group_dict, itype='Gauss'):
 def _setup_planes():
     p = gmsh.plugin
     name = 'CutPlane'
-    p.setNumber(name, 'A', 0.0)
-    p.setNumber(name, 'B', 0.0)
-    p.setNumber(name, 'C', 1.0)
-    p.setNumber(name, 'D', -0.0145)
-    p.setNumber(name, 'View', 0)
+    p.set_number(name, 'A', 0.0)
+    p.set_number(name, 'B', 0.0)
+    p.set_number(name, 'C', 1.0)
+    p.set_number(name, 'D', -0.0145)
+    p.set_number(name, 'View', 0)
     p.run(name)
     # name = 'ModulusPhase'
-    # p.setNumber(name, 'RealPart', 0)
-    # p.setNumber(name, 'ImaginaryPart', 1)
-    # p.setNumber(name, 'View', 2)
+    # p.set_number(name, 'RealPart', 0)
+    # p.set_number(name, 'ImaginaryPart', 1)
+    # p.set_number(name, 'View', 2)
     # p.run(name)
     gmsh.option.setString('View[2].Name', 'e_amp')
-    # gmsh.option.setNumber('View[2].ScaleType', 2)
-    gmsh.option.setNumber('View[2].ForceNumComponents', 9)
+    # gmsh.option.set_number('View[2].ScaleType', 2)
+    gmsh.option.set_number('View[2].ForceNumComponents', 9)
 
 
 def setup_onelab():
@@ -71,7 +71,7 @@ def setup_onelab():
             {
                 "type": "number",
                 "name": "Model/Frequency",
-                "values": [138.5],
+                "values": [137.5],
                 "min": 141.5,
                 "max": 141.0,
                 "step": 10.0,
@@ -115,16 +115,6 @@ def setup_onelab():
             },
             {
                 "type": "number",
-                "name": "Model/FeedDistance",
-                "label": "Feed Distance",
-                "values": [120.0],
-                "min": 50.0,
-                "max": 400.0,
-                "step": 10.0,
-                "clients": {"GetDP": 1}
-            },
-            {
-                "type": "number",
                 "name": "Model/PatchSize",
                 "label": "PatchSize",
                 "values": [850.0],
@@ -154,14 +144,14 @@ def _setup_plugins(r, wavenumber):
     p.run(name)
 
     name = 'NearToFarField'
-    p.setNumber(name, 'Wavenumber', wavenumber)
-    p.setNumber(name, 'RFar', 1)
-    p.setNumber(name, 'NumPointsPhi', 60)  # 50
-    p.setNumber(name, 'NumPointsTheta', 30)  # 25
-    p.setNumber(name, 'EView', 3)
-    p.setNumber(name, 'HView', 4)
-    p.setNumber(name, 'Normalize', 0)
-    p.setNumber(name, 'dB', 1)
+    p.set_number(name, 'Wavenumber', wavenumber)
+    p.set_number(name, 'RFar', 1)
+    p.set_number(name, 'NumPointsPhi', 60)  # 50
+    p.set_number(name, 'NumPointsTheta', 30)  # 25
+    p.set_number(name, 'EView', 3)
+    p.set_number(name, 'HView', 4)
+    p.set_number(name, 'Normalize', 0)
+    p.set_number(name, 'dB', 1)
     p.run(name)
 
 
