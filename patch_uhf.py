@@ -83,7 +83,7 @@ class PatchUhf(object):
         model.add(self.name)
         self._create_antenna()
         occ.synchronize()
-        # self._set_mesh_settings()
+        self._set_mesh_settings()
         # self._create_groups()
 
     def _create_antenna(self):
@@ -182,18 +182,29 @@ class PatchUhf(object):
         occ.synchronize()
         occ.remove_all_duplicates()
 
-        self.tags['sur_feed'] = sur_feed
+        sur_wire = model.get_boundary([vol_feed])
         self.tags['sur_conductor'] = [
-            sur_patch[1],
+            sur_wire[0][1],
+            sur_wire[1][1],
+            sur_wire[2][1],
             sur_substrate[1],
+            sur_patch[1],
         ]
-
         self.tags['sur_pml'] = sur_pml
+        self.tags['sur_feed'] = sur_feed
         self.tags['vol_air'] = [
             vol_air[1],
             # vol_patch[1],
             # vol_substrate1[1],
             # vol_substrate2[1],
+        ]
+        lin_cond = np.array(model.get_boundary([sur_substrate, sur_patch]))
+        self.tags['lin_cond'] = lin_cond[:, 1]
+        self.tags['sur_coarse'] = [
+            sur_wire[0][1],
+            sur_wire[1][1],
+            sur_wire[2][1],
+            sur_feed,
         ]
         self.tags['vol_pml'] = vol_pml
 
