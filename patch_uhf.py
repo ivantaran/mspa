@@ -83,8 +83,8 @@ class PatchUhf(object):
         model.add(self.name)
         self._create_antenna()
         occ.synchronize()
-        self._set_mesh_settings()
-        self._create_groups()
+        # self._set_mesh_settings()
+        # self._create_groups()
 
     def _create_antenna(self):
 
@@ -98,32 +98,42 @@ class PatchUhf(object):
         d_feed = self.d_feed
         r_shield = self.dims['r_shield']
 
-        # substrate rect
-        tag = occ.add_box(-0.5 * w_sub, -0.5 * l_sub, -
-                          0.5 * d, w_sub, l_sub, d)
-        vol_substrate = (3, tag)
-
-        tag = occ.add_box(-0.5 * w_path, -0.5 * l_patch,
-                          -0.5 * d, w_path, l_patch, d)
-        vol_patch = (3, tag)
-
-        tag = occ.add_wedge(0.0, 0.0, -0.5 * d, r_cut, r_cut, d)
-        vol_cut1 = (3, tag)
-        vol_cut2, = occ.copy([vol_cut1])
-        occ.translate([vol_cut1], -0.5 * w_path, -0.5 * l_patch, 0.0)
-        occ.rotate([vol_cut2], 0.0, 0.0, 0.0, 0.0, 0.0, 1, pi)
-        occ.translate([vol_cut2], 0.5 * w_path, 0.5 * l_patch, 0.0)
+        tag = occ.add_rectangle(
+            -0.5 * w_sub, -0.5 * l_sub, -0.5 * d,
+            w_sub, l_sub
+        )
+        sur_substrate = (2, tag)
 
         tag = occ.add_cylinder(0.0, -d_feed, -0.5 * d, 0.0, 0.0, d, r_feed)
         vol_feed = (3, tag)
-        tag = occ.add_cylinder(0.0, -d_feed, -0.5 * d, 0.0, 0.0, d, r_feed)
-        vol_feed = (3, tag)
-        tag = occ.add_cylinder(0.0, -d_feed, -0.5 * d, 0.0, 0.0, d, r_shield)
-        vol_shield = (3, tag)
+        vol_feed_cut, = occ.copy([vol_feed])
+        tag = occ.add_disk(0.0, -d_feed, -0.5 * d, r_shield, r_shield)
+        sur_shield = (2, tag)
 
-        tags, _ = occ.cut([vol_patch], [vol_cut1, vol_cut2, vol_shield, vol_feed],
-                          tag=0, removeObject=True, removeTool=True)
-        vol_patch = tags[0]
+        tags, _ = occ.cut(
+            [sur_substrate], [sur_shield],
+            tag=0, removeObject=True, removeTool=True
+        )
+        sur_substrate = tags[0]
+
+        points = [
+            occ.add_point(-0.5 * w_path, -0.5 * l_patch + r_cut, 0.5 * d),
+            occ.add_point(-0.5 * w_path, 0.5 * l_patch, 0.5 * d),
+            occ.add_point(0.5 * w_path - r_cut, 0.5 * l_patch, 0.5 * d),
+            occ.add_point(0.5 * w_path, 0.5 * l_patch - r_cut, 0.5 * d),
+            occ.add_point(0.5 * w_path, -0.5 * l_patch, 0.5 * d),
+            occ.add_point(-0.5 * w_path + r_cut, -0.5 * l_patch, 0.5 * d),
+        ]
+        lines = [
+            occ.add_line(points[0], points[1]),
+            occ.add_line(points[1], points[2]),
+            occ.add_line(points[2], points[3]),
+            occ.add_line(points[3], points[4]),
+            occ.add_line(points[4], points[5]),
+            occ.add_line(points[5], points[0]),
+        ]
+        tag = occ.add_curve_loop(lines)
+        occ.add_plane_surface([tag])
 
         tag = occ.add_sphere(0.0, 0.0, 0.0, l_sub)
         vol_air = (3, tag)
@@ -138,14 +148,9 @@ class PatchUhf(object):
                           tag=0, removeObject=True, removeTool=False)
         vol_pml = tags[0]
 
-        tags, _ = occ.cut([vol_air], [vol_substrate],
+        tags, _ = occ.cut([vol_air], [vol_feed_cut],
                           tag=0, removeObject=True, removeTool=False)
         vol_air = tags[0]
-
-        tags, _ = occ.cut([vol_substrate], [vol_patch],
-                          tag=0, removeObject=True, removeTool=False)
-        vol_substrate1 = tags[0]
-        vol_substrate2 = tags[1]
 
         occ.synchronize()
         occ.remove_all_duplicates()
@@ -156,9 +161,9 @@ class PatchUhf(object):
         self.tags['sur_pml'] = sur_pml
         self.tags['vol_air'] = [
             vol_air[1],
-            vol_patch[1],
-            vol_substrate1[1],
-            vol_substrate2[1],
+            # vol_patch[1],
+            # vol_substrate1[1],
+            # vol_substrate2[1],
         ]
         self.tags['vol_pml'] = vol_pml
 
@@ -203,7 +208,6 @@ class PatchUhf(object):
         field.set_as_background_mesh(2)
 
     def _create_groups(self):
-
         sur_feed = self.tags['sur_feed']
         sur_conductor = self.tags['sur_conductor']
         sur_pml = self.tags['sur_pml']
