@@ -204,7 +204,7 @@ class PatchUhf(object):
             sur_wire[0][1],
             sur_wire[1][1],
             sur_wire[2][1],
-            sur_feed,
+            sur_feed[1],
         ]
         self.tags['vol_pml'] = vol_pml
 
@@ -236,17 +236,30 @@ class PatchUhf(object):
 
         r = 0.0005
         field.add("Distance", 1)
-        field.set_numbers(1, "SurfacesList", [33, 44, 49, 50, 33, 34, 35])
+        field.set_numbers(1, "SurfacesList", self.tags['sur_coarse'])
         field.set_number(1, "NumPointsPerCurve", 100)
 
         field.add("Threshold", 2)
         field.set_number(2, "InField", 1)
         field.set_number(2, "SizeMin", r)
         field.set_number(2, "SizeMax", 0.2)
-        field.set_number(2, "DistMin", 0.01)
+        field.set_number(2, "DistMin", 0.001)
         field.set_number(2, "DistMax", 0.01)
 
-        field.set_as_background_mesh(2)
+        field.add("Distance", 3)
+        field.set_numbers(3, "CurvesList", self.tags['lin_cond'])
+        field.set_number(3, "NumPointsPerCurve", 100)
+
+        field.add("Threshold", 4)
+        field.set_number(4, "InField", 3)
+        field.set_number(4, "SizeMin", 0.01)
+        field.set_number(4, "SizeMax", 0.2)
+        field.set_number(4, "DistMin", 0.01)
+        field.set_number(4, "DistMax", 0.1)
+
+        field.add("Min", 5)
+        field.set_numbers(5, "FieldsList", [2, 4])
+        field.set_as_background_mesh(5)
 
     def _create_groups(self):
         sur_feed = self.tags['sur_feed']
