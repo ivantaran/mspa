@@ -106,15 +106,37 @@ class PatchUhf(object):
 
         tag = occ.add_cylinder(0.0, -d_feed, -0.5 * d, 0.0, 0.0, d, r_feed)
         vol_feed = (3, tag)
-        vol_feed_cut, = occ.copy([vol_feed])
+        occ.synchronize()
+        box = model.get_bounding_box(vol_feed[0], vol_feed[1])
+        sur_wire_feed, = model.get_entities_in_bounding_box(
+            box[0],
+            box[1],
+            box[2],
+            box[3],
+            box[4],
+            box[5] * 0.5,
+            2
+        )
+        sur_wire_top, = model.get_entities_in_bounding_box(
+            box[0],
+            box[1],
+            box[2] * 0.5,
+            box[3],
+            box[4],
+            box[5],
+            2
+        )
         tag = occ.add_disk(0.0, -d_feed, -0.5 * d, r_shield, r_shield)
         sur_shield = (2, tag)
-
         tags, _ = occ.cut(
             [sur_substrate], [sur_shield],
-            tag=0, removeObject=True, removeTool=True
+            tag=0, removeObject=True, removeTool=False
         )
         sur_substrate = tags[0]
+        tags, _ = occ.cut(
+            [sur_shield], [sur_wire_feed],
+            tag=0, removeObject=True, removeTool=False
+        )
 
         points = [
             occ.add_point(-0.5 * w_path, -0.5 * l_patch + r_cut, 0.5 * d),
@@ -133,7 +155,12 @@ class PatchUhf(object):
             occ.add_line(points[5], points[0]),
         ]
         tag = occ.add_curve_loop(lines)
-        occ.add_plane_surface([tag])
+        tag = occ.add_plane_surface([tag])
+        sur_patch = (2, tag)
+        tags, _ = occ.cut(
+            [sur_patch], [sur_wire_top],
+            tag=0, removeObject=True, removeTool=False
+        )
 
         tag = occ.add_sphere(0.0, 0.0, 0.0, l_sub)
         vol_air = (3, tag)
@@ -148,7 +175,7 @@ class PatchUhf(object):
                           tag=0, removeObject=True, removeTool=False)
         vol_pml = tags[0]
 
-        tags, _ = occ.cut([vol_air], [vol_feed_cut],
+        tags, _ = occ.cut([vol_air], [vol_feed],
                           tag=0, removeObject=True, removeTool=False)
         vol_air = tags[0]
 
