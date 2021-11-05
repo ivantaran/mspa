@@ -22,7 +22,7 @@ class PatchUhf(object):
         self.name = name
         self.dims = {}
         self.tags = {}
-        self._d_feed = 0.095
+        self._d_feed = 0.065
         self._r_cut = 0.040
         self._patch_size = 0.320
         self.refresh()
@@ -64,7 +64,7 @@ class PatchUhf(object):
         d = 20.0 * mm
         w_path = self.patch_size
         l_patch = self.patch_size
-        w_sub = 0.420
+        w_sub = 0.520  # 0.420
         l_sub = w_sub
         r_feed = 0.40 * mm
         r_shield = 1.1 * mm
@@ -84,7 +84,7 @@ class PatchUhf(object):
         self._create_antenna()
         occ.synchronize()
         self._set_mesh_settings()
-        # self._create_groups()
+        self._create_groups()
 
     def _create_antenna(self):
 
@@ -137,6 +137,7 @@ class PatchUhf(object):
             [sur_feed], [sur_wire_feed],
             tag=0, removeObject=True, removeTool=False
         )
+        sur_feed = tags[0]
 
         points = [
             occ.add_point(-0.5 * w_path, -0.5 * l_patch + r_cut, 0.5 * d),
@@ -164,7 +165,13 @@ class PatchUhf(object):
 
         tag = occ.add_sphere(0.0, 0.0, 0.0, l_sub)
         vol_air = (3, tag)
-        tag = occ.add_sphere(0.0, 0.0, 0.0, l_sub + 0.20)
+        tag = occ.add_sphere(0.0, 0.0, 0.0, l_sub * 1.2)
+        onelab.set_number('freq', [437.0e6])
+        onelab.set_number('y_feed', [-d_feed])
+        onelab.set_number('gap', [self.dims['gap']])
+        onelab.set_number('air_boundary', [l_sub])
+        onelab.set_number('pml_delta', [l_sub * 0.2])
+
         vol_pml = (3, tag)
 
         occ.synchronize()
@@ -194,9 +201,6 @@ class PatchUhf(object):
         self.tags['sur_feed'] = sur_feed
         self.tags['vol_air'] = [
             vol_air[1],
-            # vol_patch[1],
-            # vol_substrate1[1],
-            # vol_substrate2[1],
         ]
         lin_cond = np.array(model.get_boundary([sur_substrate, sur_patch]))
         self.tags['lin_cond'] = lin_cond[:, 1]
@@ -242,9 +246,9 @@ class PatchUhf(object):
         field.add("Threshold", 2)
         field.set_number(2, "InField", 1)
         field.set_number(2, "SizeMin", r)
-        field.set_number(2, "SizeMax", 0.2)
+        field.set_number(2, "SizeMax", 0.1)
         field.set_number(2, "DistMin", 0.001)
-        field.set_number(2, "DistMax", 0.01)
+        field.set_number(2, "DistMax", 0.05)
 
         field.add("Distance", 3)
         field.set_numbers(3, "CurvesList", self.tags['lin_cond'])
@@ -253,7 +257,7 @@ class PatchUhf(object):
         field.add("Threshold", 4)
         field.set_number(4, "InField", 3)
         field.set_number(4, "SizeMin", 0.01)
-        field.set_number(4, "SizeMax", 0.2)
+        field.set_number(4, "SizeMax", 0.1)
         field.set_number(4, "DistMin", 0.01)
         field.set_number(4, "DistMax", 0.1)
 
@@ -293,10 +297,10 @@ gmsh.initialize()
 antenna = PatchUhf(MODEL_NAME)
 gmsh.open('fullwave.pro')
 model.set_current(MODEL_NAME)
-# model.mesh.generate(3)
-# gmsh.write(f'{MODEL_NAME}.msh')
-# gmsh.write('fullwave.msh')
-# onelab.run()
+model.mesh.generate(3)
+gmsh.write(f'{MODEL_NAME}.msh')
+gmsh.write('fullwave.msh')
+onelab.run()
 
 if "-nopopup" not in sys.argv:
     gmsh.fltk.initialize()
