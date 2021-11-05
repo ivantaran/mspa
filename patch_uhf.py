@@ -127,14 +127,14 @@ class PatchUhf(object):
             2
         )
         tag = occ.add_disk(0.0, -d_feed, -0.5 * d, r_shield, r_shield)
-        sur_shield = (2, tag)
+        sur_feed = (2, tag)
         tags, _ = occ.cut(
-            [sur_substrate], [sur_shield],
+            [sur_substrate], [sur_feed],
             tag=0, removeObject=True, removeTool=False
         )
         sur_substrate = tags[0]
         tags, _ = occ.cut(
-            [sur_shield], [sur_wire_feed],
+            [sur_feed], [sur_wire_feed],
             tag=0, removeObject=True, removeTool=False
         )
 
@@ -182,8 +182,11 @@ class PatchUhf(object):
         occ.synchronize()
         occ.remove_all_duplicates()
 
-        self.tags['sur_feed'] = (2, 50)
-        self.tags['sur_conductor'] = [33, 34, 35, 38, 40, 48, 49]
+        self.tags['sur_feed'] = sur_feed
+        self.tags['sur_conductor'] = [
+            sur_patch[1],
+            sur_substrate[1],
+        ]
 
         self.tags['sur_pml'] = sur_pml
         self.tags['vol_air'] = [
