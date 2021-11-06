@@ -66,8 +66,8 @@ class PatchUhf(object):
         l_patch = self.patch_size
         w_sub = 0.520  # 0.420
         l_sub = w_sub
-        r_feed = 0.40 * mm
-        r_shield = 1.1 * mm
+        r_feed = 0.5 * 1.5 * mm
+        r_shield = 0.5 * 3.5 * mm
 
         self.dims['d'] = d
         self.dims['gap'] = r_shield - r_feed
@@ -162,11 +162,14 @@ class PatchUhf(object):
             [sur_patch], [sur_wire_top],
             tag=0, removeObject=True, removeTool=False
         )
+        sur_patch = tags[0]
 
         tag = occ.add_sphere(0.0, 0.0, 0.0, l_sub)
         vol_air = (3, tag)
         tag = occ.add_sphere(0.0, 0.0, 0.0, l_sub * 1.2)
-        onelab.set_number('freq', [437.0e6])
+        # onelab.set_number('freq', [437.0e6])
+        onelab.set_number('freq', [420.0e6])
+        onelab.set_number('x_feed', [0.0])
         onelab.set_number('y_feed', [-d_feed])
         onelab.set_number('gap', [self.dims['gap']])
         onelab.set_number('air_boundary', [l_sub])
@@ -188,6 +191,11 @@ class PatchUhf(object):
 
         occ.synchronize()
         occ.remove_all_duplicates()
+
+        model.mesh.embed(
+            2, [sur_substrate[1], sur_patch[1]],
+            3, vol_air[1]
+        )
 
         sur_wire = model.get_boundary([vol_feed])
         self.tags['sur_conductor'] = [
@@ -223,7 +231,7 @@ class PatchUhf(object):
         option.set_number('Mesh.Algorithm', 2)
         # 1: Delaunay, 3: Initial mesh only,
         # 4: Frontal, 7: MMG3D, 9: R-tree, 10: HXT
-        option.set_number('Mesh.Algorithm3D', 4)
+        option.set_number('Mesh.Algorithm3D', 1)
         option.set_number('Mesh.Optimize', 1)
         option.set_number('Mesh.Smoothing', 5)
         option.set_number('Mesh.SmoothNormals', 1)
@@ -238,7 +246,7 @@ class PatchUhf(object):
         option.set_number("Mesh.MeshSizeFromPoints", 0)
         option.set_number("Mesh.MeshSizeFromCurvature", 0)
 
-        r = 0.0005
+        r = 0.0002
         field.add("Distance", 1)
         field.set_numbers(1, "SurfacesList", self.tags['sur_coarse'])
         field.set_number(1, "NumPointsPerCurve", 100)
@@ -246,7 +254,7 @@ class PatchUhf(object):
         field.add("Threshold", 2)
         field.set_number(2, "InField", 1)
         field.set_number(2, "SizeMin", r)
-        field.set_number(2, "SizeMax", 0.1)
+        field.set_number(2, "SizeMax", 0.05)
         field.set_number(2, "DistMin", 0.001)
         field.set_number(2, "DistMax", 0.05)
 
@@ -256,8 +264,8 @@ class PatchUhf(object):
 
         field.add("Threshold", 4)
         field.set_number(4, "InField", 3)
-        field.set_number(4, "SizeMin", 0.01)
-        field.set_number(4, "SizeMax", 0.1)
+        field.set_number(4, "SizeMin", 0.005)
+        field.set_number(4, "SizeMax", 0.05)
         field.set_number(4, "DistMin", 0.01)
         field.set_number(4, "DistMax", 0.1)
 

@@ -21,4 +21,3 @@ SKINCONDUCTOR = 2;
 AIR = 4;
 PML = 5;
 SIGMAINF = 6;
-// GAP = 0.01;
