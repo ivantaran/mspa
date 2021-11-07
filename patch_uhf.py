@@ -164,7 +164,7 @@ class PatchUhf(object):
         vol_air = (3, tag)
         tag = occ.add_sphere(0.0, 0.0, 0.0, l_sub * 1.2)
         # onelab.set_number('freq', [437.0e6])
-        onelab.set_number('freq', [420.0e6])
+        onelab.set_number('freq', [430.0e6])
         onelab.set_number('x_feed', [0.0])
         onelab.set_number('y_feed', [-d_feed])
         onelab.set_number('gap', [self.dims['gap']])
@@ -257,7 +257,7 @@ class PatchUhf(object):
         field.add("Threshold", 2)
         field.set_number(2, "InField", 1)
         field.set_number(2, "SizeMin", r)
-        field.set_number(2, "SizeMax", 0.05)
+        field.set_number(2, "SizeMax", 0.03)
         field.set_number(2, "DistMin", 0.001)
         field.set_number(2, "DistMax", 0.1)
 
@@ -268,7 +268,7 @@ class PatchUhf(object):
         field.add("Threshold", 4)
         field.set_number(4, "InField", 3)
         field.set_number(4, "SizeMin", 0.01)
-        field.set_number(4, "SizeMax", 0.05)
+        field.set_number(4, "SizeMax", 0.03)
         field.set_number(4, "DistMin", 0.01)
         field.set_number(4, "DistMax", 0.05)
 
