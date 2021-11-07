@@ -23,7 +23,7 @@ class PatchUhf(object):
         self.dims = {}
         self.tags = {}
         self._d_feed = 0.065
-        self._r_cut = 0.040
+        self._r_cut = 0.001  # 0.040
         self._patch_size = 0.320
         self.refresh()
 
@@ -191,17 +191,19 @@ class PatchUhf(object):
 
         occ.synchronize()
         occ.remove_all_duplicates()
-
         model.mesh.embed(
             2, [sur_substrate[1], sur_patch[1]],
             3, vol_air[1]
         )
 
         sur_wire = model.get_boundary([vol_feed])
+        model.mesh.set_reverse(2, sur_patch[1])
+        model.mesh.set_reverse(2, sur_substrate[1])
+        model.mesh.set_reverse(2, sur_wire[0][1])
         self.tags['sur_conductor'] = [
             sur_wire[0][1],
-            sur_wire[1][1],
-            sur_wire[2][1],
+            # sur_wire[1][1],
+            # sur_wire[2][1],
             sur_substrate[1],
             sur_patch[1],
         ]
@@ -209,7 +211,9 @@ class PatchUhf(object):
         self.tags['sur_feed'] = sur_feed
         self.tags['vol_air'] = [
             vol_air[1],
+            vol_feed[1],
         ]
+        self.tags['vol_cond'] = []
         lin_cond = np.array(model.get_boundary([sur_substrate, sur_patch]))
         self.tags['lin_cond'] = lin_cond[:, 1]
         self.tags['sur_coarse'] = [
@@ -256,7 +260,7 @@ class PatchUhf(object):
         field.set_number(2, "SizeMin", r)
         field.set_number(2, "SizeMax", 0.05)
         field.set_number(2, "DistMin", 0.001)
-        field.set_number(2, "DistMax", 0.05)
+        field.set_number(2, "DistMax", 0.1)
 
         field.add("Distance", 3)
         field.set_numbers(3, "CurvesList", self.tags['lin_cond'])
@@ -264,10 +268,10 @@ class PatchUhf(object):
 
         field.add("Threshold", 4)
         field.set_number(4, "InField", 3)
-        field.set_number(4, "SizeMin", 0.005)
+        field.set_number(4, "SizeMin", 0.01)
         field.set_number(4, "SizeMax", 0.05)
         field.set_number(4, "DistMin", 0.01)
-        field.set_number(4, "DistMax", 0.1)
+        field.set_number(4, "DistMax", 0.05)
 
         field.add("Min", 5)
         field.set_numbers(5, "FieldsList", [2, 4])
@@ -279,6 +283,7 @@ class PatchUhf(object):
         sur_pml = self.tags['sur_pml']
         vol_air = self.tags['vol_air']
         vol_pml = self.tags['vol_pml']
+        vol_cond = self.tags['vol_cond']
 
         tag = model.add_physical_group(2, [sur_feed[1]])
         model.set_physical_name(2, tag, 'SkinFeed')
@@ -298,6 +303,9 @@ class PatchUhf(object):
 
         tag = model.add_physical_group(2, [sur_pml[1]])
         model.set_physical_name(2, tag, 'SigmaInf')
+
+        tag = model.add_physical_group(3, vol_cond)
+        model.set_physical_name(3, tag, 'Pec')
 
 
 MODEL_NAME = 'PATCH_UHF'

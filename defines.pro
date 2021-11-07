@@ -21,3 +21,4 @@ SKINCONDUCTOR = 2;
 AIR = 4;
 PML = 5;
 SIGMAINF = 6;
+PEC = 7;
