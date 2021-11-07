@@ -23,8 +23,8 @@ class PatchUhf(object):
         self.dims = {}
         self.tags = {}
         self._d_feed = 0.065
-        self._r_cut = 0.001  # 0.040
-        self._patch_size = 0.320
+        self._r_cut = 0.040
+        self._patch_size = 0.310
         self.refresh()
 
     @property
@@ -64,7 +64,7 @@ class PatchUhf(object):
         d = 20.0 * mm
         w_path = self.patch_size
         l_patch = self.patch_size
-        w_sub = 0.520  # 0.420
+        w_sub = 0.420
         l_sub = w_sub
         r_feed = 0.5 * 1.5 * mm
         r_shield = 0.5 * 3.5 * mm
@@ -163,8 +163,8 @@ class PatchUhf(object):
         tag = occ.add_sphere(0.0, 0.0, 0.0, l_sub)
         vol_air = (3, tag)
         tag = occ.add_sphere(0.0, 0.0, 0.0, l_sub * 1.2)
-        # onelab.set_number('freq', [437.0e6])
-        onelab.set_number('freq', [430.0e6])
+        onelab.set_number('freq', [438.0e6])
+        # onelab.set_number('freq', [430.0e6])
         onelab.set_number('x_feed', [0.0])
         onelab.set_number('y_feed', [-d_feed])
         onelab.set_number('gap', [self.dims['gap']])
