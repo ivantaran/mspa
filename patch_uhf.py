@@ -104,40 +104,36 @@ class PatchUhf(object):
         )
         sur_substrate = (2, tag)
 
-        tag = occ.add_cylinder(0.0, -d_feed, -0.5 * d, 0.0, 0.0, d, r_feed)
+        tag = occ.add_cylinder(
+            0.0, -d_feed, -(0.5 * d + 2.0 * r_shield),
+            0.0, 0.0, d + 2.0 * r_shield, r_feed
+        )
         vol_feed = (3, tag)
-        occ.synchronize()
-        box = model.get_bounding_box(vol_feed[0], vol_feed[1])
-        sur_wire_feed, = model.get_entities_in_bounding_box(
-            box[0],
-            box[1],
-            box[2],
-            box[3],
-            box[4],
-            box[5] * 0.5,
-            2
+
+        vol_sheild = occ.add_cylinder(
+            0.0, -d_feed, -(0.5 * d + 2.0 * r_shield),
+            0.0, 0.0, 2.0 * r_shield, r_shield
         )
-        sur_wire_top, = model.get_entities_in_bounding_box(
-            box[0],
-            box[1],
-            box[2] * 0.5,
-            box[3],
-            box[4],
-            box[5],
-            2
-        )
-        tag = occ.add_disk(0.0, -d_feed, -0.5 * d, r_shield, r_shield)
-        sur_feed = (2, tag)
-        tags, _ = occ.cut(
-            [sur_substrate], [sur_feed],
+        [sur_substrate, ], _ = occ.cut(
+            [sur_substrate], [(3, vol_sheild)],
             tag=0, removeObject=True, removeTool=False
         )
-        sur_substrate = tags[0]
-        tags, _ = occ.cut(
-            [sur_feed], [sur_wire_feed],
-            tag=0, removeObject=True, removeTool=False
-        )
-        sur_feed = tags[0]
+
+        [(_, vol_sheild)], _ = occ.cut([(3, vol_sheild)], [vol_feed], tag=0,
+                                       removeObject=True, removeTool=False)
+        # occ.synchronize()
+        # box = model.get_bounding_box(3, vol_sheild)
+        # sur_feed = model.get_entities_in_bounding_box(
+        #     box[0],
+        #     box[1],
+        #     box[2],
+        #     box[3],
+        #     box[4],
+        #     box[5] - 0.5 * (box[5] - box[2]),
+        #     2
+        # )
+
+        sur_feed = (2, 11)
 
         points = [
             occ.add_point(-0.5 * w_path, -0.5 * l_patch + r_cut, 0.5 * d),
@@ -159,7 +155,7 @@ class PatchUhf(object):
         tag = occ.add_plane_surface([tag])
         sur_patch = (2, tag)
         tags, _ = occ.cut(
-            [sur_patch], [sur_wire_top],
+            [sur_patch], [vol_feed],
             tag=0, removeObject=True, removeTool=False
         )
         sur_patch = tags[0]
@@ -185,23 +181,26 @@ class PatchUhf(object):
                           tag=0, removeObject=True, removeTool=False)
         vol_pml = tags[0]
 
-        tags, _ = occ.cut([vol_air], [vol_feed],
+        tags, _ = occ.cut([vol_air], [vol_feed, (3, vol_sheild)],
                           tag=0, removeObject=True, removeTool=False)
         vol_air = tags[0]
 
-        occ.synchronize()
         occ.remove_all_duplicates()
+        occ.synchronize()
         model.mesh.embed(
             2, [sur_substrate[1], sur_patch[1]],
             3, vol_air[1]
         )
 
         sur_wire = model.get_boundary([vol_feed])
+        sur_shield = model.get_boundary([(3, vol_sheild)])
         # model.mesh.set_reverse(2, sur_patch[1])
         self.tags['sur_conductor'] = [
             sur_wire[0][1],
-            # sur_wire[1][1],
-            # sur_wire[2][1],
+            sur_wire[1][1],
+            sur_wire[2][1],
+            sur_wire[3][1],
+            sur_shield[0][1],
             sur_substrate[1],
             sur_patch[1],
         ]
@@ -209,7 +208,7 @@ class PatchUhf(object):
         self.tags['sur_feed'] = sur_feed
         self.tags['vol_air'] = [
             vol_air[1],
-            vol_feed[1],
+            vol_sheild,
         ]
         self.tags['vol_cond'] = []
         lin_cond = np.array(model.get_boundary([sur_substrate, sur_patch]))
@@ -218,6 +217,8 @@ class PatchUhf(object):
             sur_wire[0][1],
             sur_wire[1][1],
             sur_wire[2][1],
+            sur_wire[3][1],
+            sur_shield[0][1],
             sur_feed[1],
         ]
         self.tags['vol_pml'] = vol_pml
@@ -248,7 +249,7 @@ class PatchUhf(object):
         option.set_number("Mesh.MeshSizeFromPoints", 0)
         option.set_number("Mesh.MeshSizeFromCurvature", 0)
 
-        r = 0.0002
+        r = 0.0005
         field.add("Distance", 1)
         field.set_numbers(1, "SurfacesList", self.tags['sur_coarse'])
         field.set_number(1, "NumPointsPerCurve", 100)
