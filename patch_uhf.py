@@ -197,9 +197,7 @@ class PatchUhf(object):
         )
 
         sur_wire = model.get_boundary([vol_feed])
-        model.mesh.set_reverse(2, sur_patch[1])
-        model.mesh.set_reverse(2, sur_substrate[1])
-        model.mesh.set_reverse(2, sur_wire[0][1])
+        # model.mesh.set_reverse(2, sur_patch[1])
         self.tags['sur_conductor'] = [
             sur_wire[0][1],
             # sur_wire[1][1],
