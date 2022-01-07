@@ -163,7 +163,7 @@ class PatchUhf(object):
         tag = occ.add_sphere(0.0, 0.0, 0.0, l_sub)
         vol_air = (3, tag)
         tag = occ.add_sphere(0.0, 0.0, 0.0, l_sub * 1.2)
-        onelab.set_number('freq', [438.0e6])
+        # onelab.set_number('freq', [438.0e6])
         # onelab.set_number('freq', [430.0e6])
         onelab.set_number('x_feed', [0.0])
         onelab.set_number('y_feed', [-d_feed])

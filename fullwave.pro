@@ -170,10 +170,11 @@ PostProcessing{
             {  Name e; Value  {  Local {  [ {e} ]; In DomainTot; Jacobian JVol; } } }
             {  Name h; Value  {  Local {  [ I[] * nu[] * {d e} / (2.0 * Pi * freq) ]; In Domain; Jacobian JVol; } } }
             {  Name y; Value  {  Integral {  [ {h} * dr[] ]; In SkinFeed; Jacobian JSur; Integration I2; } } }
-            {  Name e_norm; Value  {  Local { [Norm[{e}]]; In Domain; Jacobian JVol; } } }
-            {  Name h_norm; Value  {  Local { [Norm[{h}]]; In Domain; Jacobian JVol; } } }
+            {  Name exh ; Value{ Local{ [CrossProduct[ {e}, Conj[I[] * nu[] * {d e} / (2.0 * Pi * freq)]]]; In Domain;  Jacobian JVol;} } }
+            // {  Name e_norm; Value  {  Local { [Norm[{e}]]; In Domain; Jacobian JVol; } } }
+            // {  Name h_norm; Value  {  Local { [Norm[{h}]]; In Domain; Jacobian JVol; } } }
             {  Name s11; Value  {  Term { Type Global; [ 20.0 * Log10[Norm[(1.0 - zl * $y) / (1.0 + zl * $y)]] ]; In SkinFeed; } } }
-            }
+          }
     }
 }
 
@@ -182,7 +183,8 @@ PostOperation{
          Operation {  
             Print [ e, OnElementsOf Region[{Domain}], File "./build/e.pos" ]; 
             Print [ h, OnElementsOf Region[{Domain}], File "./build/h.pos" ]; 
-            Print [ e_norm, OnSection {{0.0, 0.0, 0.0} {1.0, 0.0, 0.0} {0.0, 1.0, 0.0}}, File "./build/e_norm.pos" ]; 
+            Print [ exh, OnElementsOf Region[{Domain}], File "./build/exh.pos" ]; 
+            // Print [ e_norm, OnSection {{0.0, 0.0, 0.0} {1.0, 0.0, 0.0} {0.0, 1.0, 0.0}}, File "./build/e_norm.pos" ]; 
             // Print [ e_norm, OnSection {{0.0, 0.0, 0.01} {1.0, 0.0, 0.01} {0.0, 1.0, 0.01}}, File "./build/e_norm1.pos" ]; 
             // Print [ e_norm, OnSection {{0.0, 0.0, -0.01} {1.0, 0.0, -0.01} {0.0, 1.0, -0.01}}, File "./build/e_norm2.pos" ]; 
             // Print [ e_norm, OnGrid SkinConductor, File "./build/e_norm3.pos" ]; 
