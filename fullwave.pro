@@ -133,17 +133,17 @@ Formulation{
             }
     }
     { Name Microwave_e; Type FemEquation; 
-         Quantity {  
+        Quantity {  
             {  Name e; Type Local; NameOfSpace Hcurl_e; } 
             {  Name h; Type Local; NameOfSpace Hcurl_h; } 
-            }
-         Equation {  
+        }
+        Equation {  
            Galerkin { [ nu[] * Dof{d e} , {d e} ]; In Domain; Integration I1; Jacobian JVol; } 
            Galerkin { DtDof[ sigma[] * Dof{e}, {e} ]; In DomainC; Integration I1; Jacobian JVol; } 
            Galerkin { DtDtDof[ epsilon[] * Dof{e} , {e} ]; In Domain; Integration I1; Jacobian JVol; } 
            Galerkin { [ Dof{h} , {h} ]; In TrGr; Integration I1; Jacobian JVol; } 
            Galerkin { [ -I[] * nu[] * Dof{d e} / (2.0 * Pi * freq), {h} ]; In TrGr; Integration I1; Jacobian JVol; } 
-            }
+        }
     }
 }
 
@@ -173,7 +173,7 @@ PostProcessing{
             {  Name exh ; Value{ Local{ [CrossProduct[ {e}, Conj[I[] * nu[] * {d e} / (2.0 * Pi * freq)]]]; In Domain;  Jacobian JVol;} } }
             // {  Name e_norm; Value  {  Local { [Norm[{e}]]; In Domain; Jacobian JVol; } } }
             // {  Name h_norm; Value  {  Local { [Norm[{h}]]; In Domain; Jacobian JVol; } } }
-            {  Name s11; Value  {  Term { Type Global; [ 20.0 * Log10[Norm[(1.0 - zl * $y) / (1.0 + zl * $y)]] ]; In SkinFeed; } } }
+            {  Name s11; Value  { Local { Type Global; [ 20.0 * Log10[Norm[(1.0 - zl * $y) / (1.0 + zl * $y)]] ]; In SkinFeed; } } }
           }
     }
 }
@@ -181,9 +181,9 @@ PostProcessing{
 PostOperation{
     { Name Microwave_e; NameOfPostProcessing Microwave_e; 
          Operation {  
-            Print [ e, OnElementsOf Region[{Domain}], File "./build/e.pos" ]; 
-            Print [ h, OnElementsOf Region[{Domain}], File "./build/h.pos" ]; 
-            Print [ exh, OnElementsOf Region[{Domain}], File "./build/exh.pos" ]; 
+            // Print [ e, OnElementsOf Region[{Domain}], File "./build/e.pos" ]; 
+            // Print [ h, OnElementsOf Region[{Domain}], File "./build/h.pos" ]; 
+            // Print [ exh, OnElementsOf Region[{Domain}], File "./build/exh.pos" ]; 
             // Print [ e_norm, OnSection {{0.0, 0.0, 0.0} {1.0, 0.0, 0.0} {0.0, 1.0, 0.0}}, File "./build/e_norm.pos" ]; 
             // Print [ e_norm, OnSection {{0.0, 0.0, 0.01} {1.0, 0.0, 0.01} {0.0, 1.0, 0.01}}, File "./build/e_norm1.pos" ]; 
             // Print [ e_norm, OnSection {{0.0, 0.0, -0.01} {1.0, 0.0, -0.01} {0.0, 1.0, -0.01}}, File "./build/e_norm2.pos" ]; 
