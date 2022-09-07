@@ -14,7 +14,7 @@ Group{
     Domain = Region[ {Air, Pml} ];
     DefineGroup[DomainS];
     DefineGroup[SurS];
-    TrGr = ElementsOf[ Domain , OnOneSideOf SkinFeed];
+    TrGr = ElementsOf[Domain, OnOneSideOf SkinFeed];
 }
 
 Function{
@@ -167,10 +167,10 @@ Resolution{
 PostProcessing{
     { Name Microwave_e; NameOfFormulation Microwave_e; 
          Quantity {  
-            {  Name e; Value  {  Local {  [ {e} ]; In DomainTot; Jacobian JVol; } } }
-            {  Name h; Value  {  Local {  [ I[] * nu[] * {d e} / (2.0 * Pi * freq) ]; In Domain; Jacobian JVol; } } }
+            // {  Name e; Value  {  Local {  [ {e} ]; In DomainTot; Jacobian JVol; } } }
+            // {  Name h; Value  {  Local {  [ I[] * nu[] * {d e} / (2.0 * Pi * freq) ]; In Domain; Jacobian JVol; } } }
             {  Name y; Value  {  Integral {  [ {h} * dr[] ]; In SkinFeed; Jacobian JSur; Integration I2; } } }
-            {  Name exh ; Value{ Local{ [CrossProduct[ {e}, Conj[I[] * nu[] * {d e} / (2.0 * Pi * freq)]]]; In Domain;  Jacobian JVol;} } }
+            // {  Name exh ; Value{ Local{ [CrossProduct[ {e}, Conj[I[] * nu[] * {d e} / (2.0 * Pi * freq)]]]; In Domain;  Jacobian JVol;} } }
             // {  Name e_norm; Value  {  Local { [Norm[{e}]]; In Domain; Jacobian JVol; } } }
             // {  Name h_norm; Value  {  Local { [Norm[{h}]]; In Domain; Jacobian JVol; } } }
             {  Name s11; Value  { Local { Type Global; [ 20.0 * Log10[Norm[(1.0 - zl * $y) / (1.0 + zl * $y)]] ]; In SkinFeed; } } }
@@ -181,6 +181,7 @@ PostProcessing{
 PostOperation{
     { Name Microwave_e; NameOfPostProcessing Microwave_e; 
         Operation {  
+            // Print [ s11, OnElementsOf Region[{SkinFeed}], File "./build/s11_.pos" ]; 
             // Print [ e, OnElementsOf Region[{Domain}], File "./build/e.pos" ]; 
             // Print [ h, OnElementsOf Region[{Domain}], File "./build/h.pos" ]; 
             // Print [ exh, OnElementsOf Region[{Domain}], File "./build/exh.pos" ]; 
